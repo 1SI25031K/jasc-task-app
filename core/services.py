@@ -2,11 +2,28 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime, timedelta
 from typing import Iterable
+import uuid
 
-from core.models import Member, Role, RoleAssignment, Task
+from core.assignments import determine_initial_assignment
+from core.load import calc_member_auto_load, get_latest_checkin
+from core.models import (
+    ActivityLog,
+    Checkin,
+    LangCode,
+    Member,
+    Role,
+    RoleAssignment,
+    Task,
+    TaskPriority,
+    TaskSource,
+    TaskStatus,
+    TaskWeight,
+    format_comma_ids,
+)
+from core.settings import AppSettings
 
 
 def is_overdue_na(task: Task, today: date) -> bool:
@@ -109,4 +126,413 @@ def build_role_board_summaries(
             )
         )
     return summaries
+
+
+def build_member_load_label(
+    member: Member,
+    tasks: Iterable[Task],
+    checkins: Iterable[Checkin],
+    today: date,
+    lang: LangCode = "ja",
+    settings: AppSettings | None = None,
+) -> str:
+    """F7・F8・F14 の担当者選択肢用に「名前（自動 Xpt／体感 Y）」形式の文字列を作る。"""
+    from core.i18n import t
+
+    auto_pt = calc_member_auto_load(member.member_id, tasks, today, settings)
+    latest_c, is_fresh = get_latest_checkin(member.member_id, checkins, today)
+    subj_str = (
+        str(latest_c.score)
+        if (latest_c is not None and is_fresh)
+        else t("common.unanswered", lang)
+    )
+    return t(
+        "common.owner_option_format",
+        lang,
+        name=member.get_name(lang),
+        auto_pt=auto_pt,
+        subj=subj_str,
+    )
+
+
+def count_pending_requests_for_member(
+    member_id: str, tasks: Iterable[Task]
+) -> int:
+    """指定メンバー宛てで現在「依頼中」かつ未完了・未アーカイブのタスク件数を返す（F2上部バナー用）。"""
+    return sum(
+        1
+        for t in tasks
+        if not t.archived
+        and t.status != "完了"
+        and t.owner_member_id == member_id
+        and t.assignment_status == "依頼中"
+    )
+
+
+def is_checkin_unanswered_for_member(
+    member_id: str,
+    checkins: Iterable[Checkin],
+    today: date,
+    settings: AppSettings | None = None,
+) -> bool:
+    """F2上部のお知らせ「体感負荷が未回答です」を出すべきか判定する。
+
+    - 最後の回答から7日以上経過している（または一度も回答していない）、または
+    - 今日が checkin_weekdays の曜日で、今日まだ回答していない場合に True。
+    """
+    from core.reminders import get_japanese_weekday
+
+    cfg = settings or AppSettings()
+    latest, is_fresh = get_latest_checkin(member_id, checkins, today)
+    if latest is None or not is_fresh:
+        return True
+    weekday_ja = get_japanese_weekday(today)
+    if weekday_ja in cfg.checkin_weekdays and latest.date < today:
+        return True
+    return False
+
+
+def create_new_task(
+    *,
+    title: str,
+    role_ids: list[str],
+    owner_member_id: str,
+    creator_member_id: str,
+    weight: TaskWeight,
+    next_action: str,
+    na_due: date,
+    now: datetime,
+    task_due: date | None = None,
+    status: TaskStatus = "未着手",
+    waiting_on_member_id: str = "",
+    priority: TaskPriority = "中",
+    blocker: str = "",
+    notes: str = "",
+    source: TaskSource = "manual",
+    meeting_id: str = "",
+    task_id: str | None = None,
+) -> tuple[Task, list[ActivityLog]]:
+    """F7 タスクを新規作成し、初期の依頼状態（5.3）と変更履歴（F10）を生成する。"""
+    clean_title = title.strip()
+    clean_na = next_action.strip()
+    clean_roles = [r.strip() for r in role_ids if r.strip()]
+    if not clean_title or not clean_na or not clean_roles:
+        raise ValueError(
+            "タイトル、関係する役職（1つ以上）、次のアクション（NA）は必須です。"
+        )
+
+    assign_status, requested_by = determine_initial_assignment(
+        creator_member_id=creator_member_id,
+        owner_member_id=owner_member_id,
+    )
+    new_id = task_id or f"t_{uuid.uuid4().hex[:8]}"
+    completed_at = now if status == "完了" else None
+    completed_by = creator_member_id if status == "完了" else ""
+
+    task = Task(
+        task_id=new_id,
+        title=clean_title,
+        role_ids=clean_roles,
+        owner_member_id=owner_member_id,
+        requested_by=requested_by,
+        assignment_status=assign_status,
+        assignment_comment="",
+        weight=weight,
+        next_action=clean_na,
+        na_due=na_due,
+        task_due=task_due,
+        status=status,
+        waiting_on_member_id=waiting_on_member_id if status == "待ち" else "",
+        priority=priority,
+        blocker=blocker.strip(),
+        notes=notes.strip(),
+        source=source,
+        meeting_id=meeting_id,
+        completed_at=completed_at,
+        completed_by=completed_by,
+        created_at=now,
+        created_by=creator_member_id,
+        updated_at=now,
+        updated_by=creator_member_id,
+        archived=False,
+    )
+
+    action_type = (
+        "create_from_minutes" if source == "minutes" else "create"
+    )
+    logs: list[ActivityLog] = [
+        ActivityLog(
+            timestamp=now,
+            member_id=creator_member_id,
+            task_id=new_id,
+            action=action_type,  # type: ignore[arg-type]
+            field="title",
+            old_value="",
+            new_value=clean_title,
+        )
+    ]
+    if assign_status == "依頼中":
+        logs.append(
+            ActivityLog(
+                timestamp=now,
+                member_id=creator_member_id,
+                task_id=new_id,
+                action="request",
+                field="owner_member_id",
+                old_value="",
+                new_value=owner_member_id,
+            )
+        )
+    return task, logs
+
+
+def apply_quick_na_update(
+    task: Task,
+    next_action: str,
+    na_due: date,
+    status: TaskStatus,
+    actor_member_id: str,
+    now: datetime,
+) -> tuple[Task, list[ActivityLog]]:
+    """F8 「NA を更新」簡易フォームの変更を適用し、差分のみ変更履歴（F10）を生成する。"""
+    clean_na = next_action.strip()
+    if not clean_na:
+        raise ValueError("次のアクション（NA）は必須です。")
+
+    logs: list[ActivityLog] = []
+    if task.next_action != clean_na:
+        logs.append(
+            ActivityLog(
+                timestamp=now,
+                member_id=actor_member_id,
+                task_id=task.task_id,
+                action="update",
+                field="next_action",
+                old_value=task.next_action,
+                new_value=clean_na,
+            )
+        )
+    if task.na_due != na_due:
+        logs.append(
+            ActivityLog(
+                timestamp=now,
+                member_id=actor_member_id,
+                task_id=task.task_id,
+                action="update",
+                field="na_due",
+                old_value=task.na_due.isoformat(),
+                new_value=na_due.isoformat(),
+            )
+        )
+    completed_at = task.completed_at
+    completed_by = task.completed_by
+    if task.status != status:
+        logs.append(
+            ActivityLog(
+                timestamp=now,
+                member_id=actor_member_id,
+                task_id=task.task_id,
+                action="update",
+                field="status",
+                old_value=task.status,
+                new_value=status,
+            )
+        )
+        if status == "完了":
+            completed_at = now
+            completed_by = actor_member_id
+        else:
+            completed_at = None
+            completed_by = ""
+
+    updated_task = replace(
+        task,
+        next_action=clean_na,
+        na_due=na_due,
+        status=status,
+        completed_at=completed_at,
+        completed_by=completed_by,
+        updated_at=now,
+        updated_by=actor_member_id,
+    )
+    return updated_task, logs
+
+
+def apply_full_task_update(
+    task: Task,
+    *,
+    title: str,
+    role_ids: list[str],
+    owner_member_id: str,
+    weight: TaskWeight,
+    next_action: str,
+    na_due: date,
+    task_due: date | None,
+    status: TaskStatus,
+    waiting_on_member_id: str,
+    priority: TaskPriority,
+    blocker: str,
+    notes: str,
+    actor_member_id: str,
+    now: datetime,
+    force_rerequest: bool = False,
+) -> tuple[Task, list[ActivityLog]]:
+    """F8 全項目の編集を適用する。担当者が変更された場合（または相談中からの再依頼時）は 5.3 に従い依頼状態を更新する。"""
+    clean_title = title.strip()
+    clean_na = next_action.strip()
+    clean_roles = [r.strip() for r in role_ids if r.strip()]
+    if not clean_title or not clean_na or not clean_roles:
+        raise ValueError(
+            "タイトル、関係する役職（1つ以上）、次のアクション（NA）は必須です。"
+        )
+
+    logs: list[ActivityLog] = []
+
+    def _record_diff(field_name: str, old_val: str, new_val: str) -> None:
+        if old_val != new_val:
+            logs.append(
+                ActivityLog(
+                    timestamp=now,
+                    member_id=actor_member_id,
+                    task_id=task.task_id,
+                    action="update",
+                    field=field_name,
+                    old_value=old_val,
+                    new_value=new_val,
+                )
+            )
+
+    _record_diff("title", task.title, clean_title)
+    _record_diff(
+        "role_ids", format_comma_ids(task.role_ids), format_comma_ids(clean_roles)
+    )
+    _record_diff("weight", task.weight, weight)
+    _record_diff("next_action", task.next_action, clean_na)
+    _record_diff("na_due", task.na_due.isoformat(), na_due.isoformat())
+    _record_diff(
+        "task_due",
+        task.task_due.isoformat() if task.task_due else "",
+        task_due.isoformat() if task_due else "",
+    )
+    _record_diff("status", task.status, status)
+    _record_diff("priority", task.priority, priority)
+    clean_waiting = waiting_on_member_id if status == "待ち" else ""
+    _record_diff("waiting_on_member_id", task.waiting_on_member_id, clean_waiting)
+    _record_diff("blocker", task.blocker, blocker.strip())
+    _record_diff("notes", task.notes, notes.strip())
+
+    assign_status = task.assignment_status
+    requested_by = task.requested_by
+    assign_comment = task.assignment_comment
+
+    if owner_member_id != task.owner_member_id or force_rerequest:
+        assign_status, requested_by = determine_initial_assignment(
+            creator_member_id=actor_member_id,
+            owner_member_id=owner_member_id,
+        )
+        assign_comment = ""
+        logs.append(
+            ActivityLog(
+                timestamp=now,
+                member_id=actor_member_id,
+                task_id=task.task_id,
+                action="request" if assign_status == "依頼中" else "update",
+                field="owner_member_id",
+                old_value=f"{task.owner_member_id}({task.assignment_status})",
+                new_value=f"{owner_member_id}({assign_status})",
+            )
+        )
+
+    completed_at = task.completed_at
+    completed_by = task.completed_by
+    if task.status != status:
+        if status == "完了":
+            completed_at = now
+            completed_by = actor_member_id
+        else:
+            completed_at = None
+            completed_by = ""
+
+    updated_task = replace(
+        task,
+        title=clean_title,
+        role_ids=clean_roles,
+        owner_member_id=owner_member_id,
+        requested_by=requested_by,
+        assignment_status=assign_status,
+        assignment_comment=assign_comment,
+        weight=weight,
+        next_action=clean_na,
+        na_due=na_due,
+        task_due=task_due,
+        status=status,
+        waiting_on_member_id=clean_waiting,
+        priority=priority,
+        blocker=blocker.strip(),
+        notes=notes.strip(),
+        completed_at=completed_at,
+        completed_by=completed_by,
+        updated_at=now,
+        updated_by=actor_member_id,
+    )
+    return updated_task, logs
+
+
+def toggle_archive_task(
+    task: Task, archived: bool, actor_member_id: str, now: datetime
+) -> tuple[Task, ActivityLog]:
+    """F9 タスクをアーカイブまたは復元し、変更履歴（F10）を生成する。"""
+    action_type = "archive" if archived else "restore"
+    updated_task = replace(
+        task,
+        archived=archived,
+        updated_at=now,
+        updated_by=actor_member_id,
+    )
+    log = ActivityLog(
+        timestamp=now,
+        member_id=actor_member_id,
+        task_id=task.task_id,
+        action=action_type,  # type: ignore[arg-type]
+        field="archived",
+        old_value=str(task.archived),
+        new_value=str(archived),
+    )
+    return updated_task, log
+
+
+def filter_tasks(
+    tasks: Iterable[Task],
+    *,
+    role_id: str = "",
+    owner_member_id: str = "",
+    status: str = "",
+    assignment_status: str = "",
+    source: str = "",
+    keyword: str = "",
+    show_archived: bool = False,
+) -> list[Task]:
+    """F6 全タスク一覧の絞り込みを行う。"""
+    kw = keyword.strip().lower()
+    results: list[Task] = []
+    for t in tasks:
+        if not show_archived and t.archived:
+            continue
+        if role_id and role_id not in t.role_ids:
+            continue
+        if owner_member_id and t.owner_member_id != owner_member_id:
+            continue
+        if status and t.status != status:
+            continue
+        if assignment_status and t.assignment_status != assignment_status:
+            continue
+        if source and t.source != source:
+            continue
+        if kw:
+            haystack = f"{t.title} {t.next_action} {t.notes} {t.blocker}".lower()
+            if kw not in haystack:
+                continue
+        results.append(t)
+    return sorted(results, key=lambda item: (item.na_due, item.task_id))
+
 

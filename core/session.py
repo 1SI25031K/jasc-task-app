@@ -1,0 +1,737 @@
+"""Streamlit 画面共通のセッション状態管理と、タスク作成・編集・履歴表示 UI コンポーネント。"""
+
+from __future__ import annotations
+
+from datetime import date, datetime, timedelta
+import streamlit as st
+
+from core.i18n import (
+    format_date,
+    format_datetime,
+    t,
+    translate_assignment_status,
+    translate_priority,
+    translate_status,
+    translate_weight,
+)
+from core.models import (
+    JST,
+    LangCode,
+    Member,
+    OptimisticLockError,
+    Role,
+    Task,
+    TaskPriority,
+    TaskStatus,
+    TaskWeight,
+)
+from core.na_extractor import DummyNaExtractor
+from core.notifier import DummyNotifier
+from core.repository import (
+    InMemoryRepository,
+    Repository,
+    build_dummy_daily_snapshots,
+)
+from core.services import (
+    apply_full_task_update,
+    apply_quick_na_update,
+    build_member_load_label,
+    create_new_task,
+    is_due_this_week,
+    is_overdue_na,
+    toggle_archive_task,
+)
+
+ALL_STATUSES: list[TaskStatus] = ["未着手", "進行中", "待ち", "完了"]
+ALL_WEIGHTS: list[TaskWeight] = ["軽", "中", "重"]
+ALL_PRIORITIES: list[TaskPriority] = ["高", "中", "低"]
+
+
+def get_now() -> datetime:
+    """現在日時（Asia/Tokyo）を返す。"""
+    return datetime.now(JST)
+
+
+def get_today() -> date:
+    """本日の日付（Asia/Tokyo）を返す。"""
+    return get_now().date()
+
+
+def init_session_state() -> None:
+    """st.session_state にリポジトリ・現在のメンバー・表示言語を初期化する。"""
+    if "repo" not in st.session_state:
+        today = get_today()
+        repo_inst = InMemoryRepository.create_with_dummy_data(today=today)
+        repo_inst.save_daily_snapshots(
+            build_dummy_daily_snapshots(
+                today=today,
+                members=repo_inst.list_members(),
+                roles=repo_inst.list_roles(),
+            )
+        )
+        st.session_state["repo"] = repo_inst
+    if "notifier" not in st.session_state:
+        st.session_state["notifier"] = DummyNotifier()
+    if "na_extractor" not in st.session_state:
+        st.session_state["na_extractor"] = DummyNaExtractor()
+    if "current_member_id" not in st.session_state:
+        # フェーズ2では仮に「メンバーA（m001）」としてログインしている扱いにする
+        st.session_state["current_member_id"] = "m001"
+    if "lang" not in st.session_state:
+        repo: Repository = st.session_state["repo"]
+        members = repo.list_members()
+        m1 = next(
+            (
+                m
+                for m in members
+                if m.member_id == st.session_state["current_member_id"]
+            ),
+            None,
+        )
+        initial_lang = m1.lang if m1 else "ja"
+        qp_lang = st.query_params.get("lang")
+        if qp_lang in ("ja", "en"):
+            initial_lang = qp_lang
+        st.session_state["lang"] = initial_lang
+        st.session_state["lang_choice"] = initial_lang
+
+
+def get_repo() -> Repository:
+    """セッション内の Repository インスタンスを取得する。"""
+    init_session_state()
+    return st.session_state["repo"]
+
+
+def get_lang() -> LangCode:
+    """現在の表示言語（'ja' または 'en'）を取得する。"""
+    init_session_state()
+    val = st.session_state.get("lang_choice", st.session_state.get("lang", "ja"))
+    return "en" if val == "en" else "ja"
+
+
+def get_current_member() -> Member:
+    """現在ログイン中（操作中）の Member を取得する。"""
+    repo = get_repo()
+    members = repo.list_members()
+    current_id = st.session_state.get("current_member_id", "m001")
+    for m in members:
+        if m.member_id == current_id:
+            return m
+    return members[0]
+
+
+def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
+    """6.3 ステータスの色（未着手=グレー、進行中=青、待ち=黄、完了=緑、期限切れ=赤）を Markdown バッジで返す。"""
+    status_label = translate_status(task.status, lang)
+    color_map = {
+        "未着手": "gray",
+        "進行中": "blue",
+        "待ち": "orange",
+        "完了": "green",
+    }
+    color = color_map.get(task.status, "gray")
+    badges = [f":{color}-badge[{status_label}]"]
+
+    if is_overdue_na(task, today):
+        badges.append(f":red-badge[{t('common.overdue_badge', lang)}]")
+    elif is_due_this_week(task, today):
+        badges.append(f":orange-badge[{t('common.due_this_week_badge', lang)}]")
+
+    if task.assignment_status == "依頼中":
+        badges.append(
+            f":violet-badge[{translate_assignment_status('依頼中', lang)}]"
+        )
+    elif task.assignment_status == "相談中":
+        badges.append(
+            f":orange-badge[{translate_assignment_status('相談中', lang)}]"
+        )
+
+    if task.archived:
+        badges.append(f":gray-badge[{t('common.archived_badge', lang)}]")
+
+    return " ".join(badges)
+
+
+def format_subjective_score_badge(
+    score: int | None, is_fresh: bool, lang: LangCode
+) -> str:
+    """6.3 体感負荷の色（1〜4=緑、5〜7=黄、8〜10=赤）と数値を合わせて表示する。"""
+    if score is None or not is_fresh:
+        return f":gray-badge[{t('common.unanswered', lang)}]"
+    if score <= 4:
+        return f":green-badge[🟢 {score} / 10]"
+    if score <= 7:
+        return f":orange-badge[🟡 {score} / 10]"
+    return f":red-badge[🔴 {score} / 10]"
+
+
+@st.dialog("Task Form", width="large")
+def open_create_task_dialog(default_role_id: str = "") -> None:
+    """F7 新規タスク作成ダイアログを表示する。"""
+    repo = get_repo()
+    lang = get_lang()
+    today = get_today()
+    now = get_now()
+    current_member = get_current_member()
+
+    roles = repo.list_roles(active_only=True)
+    members = repo.list_members(active_only=True)
+    tasks = repo.list_tasks(include_archived=False)
+    checkins = repo.list_checkins()
+    settings = repo.get_settings()
+
+    role_map = {r.role_id: r for r in roles}
+    member_map = {m.member_id: m for m in members}
+    owner_labels = {
+        m.member_id: build_member_load_label(
+            m, tasks, checkins, today, lang, settings
+        )
+        for m in members
+    }
+
+    st.subheader(t("task_form.create_title", lang))
+
+    title = st.text_input(t("task_form.field_title", lang), key="dlg_new_title")
+    default_roles = (
+        [default_role_id]
+        if default_role_id and default_role_id in role_map
+        else ([roles[0].role_id] if roles else [])
+    )
+    selected_roles = st.multiselect(
+        t("task_form.field_roles", lang),
+        options=[r.role_id for r in roles],
+        default=default_roles,
+        format_func=lambda rid: role_map[rid].get_name(lang),
+        key="dlg_new_roles",
+    )
+
+    member_ids = [m.member_id for m in members]
+    default_owner_idx = (
+        member_ids.index(current_member.member_id)
+        if current_member.member_id in member_ids
+        else 0
+    )
+    selected_owner = st.selectbox(
+        t("task_form.field_owner", lang),
+        options=member_ids,
+        index=default_owner_idx,
+        format_func=lambda mid: owner_labels.get(mid, mid),
+        key="dlg_new_owner",
+    )
+
+    # 自分以外を担当者にしたら「依頼」になることを保存前に画面で明示する（要件4・5.3）
+    if selected_owner != current_member.member_id:
+        owner_name = member_map[selected_owner].get_name(lang)
+        st.info(
+            t("task_form.request_notice_info", lang, owner_name=owner_name)
+        )
+    else:
+        st.caption(t("task_form.self_assign_info", lang))
+
+    col_w, col_p, col_s = st.columns(3)
+    with col_w:
+        weight = st.radio(
+            t("task_form.field_weight", lang),
+            options=ALL_WEIGHTS,
+            index=1,
+            format_func=lambda w: translate_weight(w, lang),
+            horizontal=True,
+            key="dlg_new_weight",
+        )
+    with col_p:
+        priority = st.selectbox(
+            t("task_form.field_priority", lang),
+            options=ALL_PRIORITIES,
+            index=1,
+            format_func=lambda p: translate_priority(p, lang),
+            key="dlg_new_priority",
+        )
+    with col_s:
+        status = st.selectbox(
+            t("task_form.field_status", lang),
+            options=ALL_STATUSES,
+            index=0,
+            format_func=lambda s: translate_status(s, lang),
+            key="dlg_new_status",
+        )
+    st.caption(t("weight.guide", lang))
+
+    next_action = st.text_input(
+        t("task_form.field_na", lang), key="dlg_new_na"
+    )
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        na_due = st.date_input(
+            t("task_form.field_na_due", lang),
+            value=today + timedelta(days=3),
+            key="dlg_new_na_due",
+        )
+    with col_d2:
+        enable_task_due = st.checkbox(
+            t("task_form.field_enable_task_due", lang),
+            value=False,
+            key="dlg_new_enable_task_due",
+        )
+        task_due = (
+            st.date_input(
+                t("task_form.field_task_due", lang),
+                value=today + timedelta(days=10),
+                key="dlg_new_task_due",
+            )
+            if enable_task_due
+            else None
+        )
+
+    waiting_on_id = ""
+    if status == "待ち":
+        wait_options = [""] + member_ids
+        waiting_on_id = st.selectbox(
+            t("task_form.field_waiting_on", lang),
+            options=wait_options,
+            format_func=lambda mid: (
+                t("common.none", lang)
+                if not mid
+                else member_map[mid].get_name(lang)
+            ),
+            key="dlg_new_waiting_on",
+        )
+    blocker = st.text_input(
+        t("task_form.field_blocker", lang), key="dlg_new_blocker"
+    )
+    st.caption(t("task_form.notes_privacy_warning", lang))
+    notes = st.text_area(
+        t("task_form.field_notes", lang), height=70, key="dlg_new_notes"
+    )
+
+    if st.button(
+        t("common.save", lang), type="primary", use_container_width=True
+    ):
+        if not title.strip() or not selected_roles or not next_action.strip():
+            st.error(t("task_form.validation_error_required", lang))
+            return
+        new_task, logs = create_new_task(
+            title=title,
+            role_ids=selected_roles,
+            owner_member_id=selected_owner,
+            creator_member_id=current_member.member_id,
+            weight=weight,
+            next_action=next_action,
+            na_due=na_due,
+            task_due=task_due,
+            status=status,
+            waiting_on_member_id=waiting_on_id,
+            priority=priority,
+            blocker=blocker,
+            notes=notes,
+            now=now,
+        )
+        repo.add_task(new_task)
+        for log in logs:
+            repo.add_activity_log(log)
+        st.toast(t("common.saved_toast", lang))
+        st.rerun()
+
+
+def render_task_card(
+    task: Task,
+    roles: list[Role],
+    members: list[Member],
+    checkins: list,
+    all_tasks: list[Task],
+    key_prefix: str,
+) -> None:
+    """タスク1件のカード表示と、「NAを更新」簡易フォーム（F8）・全項目編集（F8）・アーカイブ/復元（F9）・履歴（F10）を描画する。"""
+    repo = get_repo()
+    lang = get_lang()
+    today = get_today()
+    now = get_now()
+    current_member = get_current_member()
+    settings = repo.get_settings()
+
+    role_map = {r.role_id: r for r in roles}
+    member_map = {m.member_id: m for m in members}
+    owner = member_map.get(task.owner_member_id)
+    owner_name = owner.get_name(lang) if owner else task.owner_member_id
+    role_names = " / ".join(
+        role_map[rid].get_name(lang) for rid in task.role_ids if rid in role_map
+    )
+
+    with st.container(border=True):
+        # 1行目：バッジ・タイトル・担当・役職・重さ
+        badges_md = format_status_badge(task, today, lang)
+        weight_label = translate_weight(task.weight, lang)
+        st.markdown(
+            f"{badges_md} **{task.title}**"
+        )
+        meta_parts = [
+            f"**{t('common.role', lang)}**: {role_names}",
+            f"**{t('common.owner', lang)}**: {owner_name}",
+            f"**{t('common.weight', lang)}**: {weight_label}",
+            f"**{t('common.due_date', lang)}**: {format_date(task.na_due, lang)}",
+        ]
+        if task.requested_by and task.requested_by in member_map:
+            req_name = member_map[task.requested_by].get_name(lang)
+            meta_parts.append(
+                f"**{t('common.requested_by', lang)}**: {req_name}"
+            )
+        st.caption(" ｜ ".join(meta_parts))
+
+        # 2行目：現在の NA
+        st.markdown(
+            f"👉 **{t('common.next_action', lang)}**: {task.next_action}"
+        )
+
+        if task.assignment_status == "相談中" and task.assignment_comment:
+            st.warning(
+                t(
+                    "task_form.consult_comment_box",
+                    lang,
+                    comment=task.assignment_comment,
+                )
+            )
+
+        # 3行目：F8「NA を更新」簡易フォーム（2クリック以内で操作可能）
+        with st.expander(t("task_form.quick_na_expander", lang)):
+            q_col1, q_col2, q_col3, q_col4 = st.columns([3, 2, 2, 1.5])
+            with q_col1:
+                new_na = st.text_input(
+                    t("common.next_action", lang),
+                    value=task.next_action,
+                    key=f"{key_prefix}_q_na_{task.task_id}",
+                )
+            with q_col2:
+                new_na_due = st.date_input(
+                    t("common.due_date", lang),
+                    value=task.na_due,
+                    key=f"{key_prefix}_q_due_{task.task_id}",
+                )
+            with q_col3:
+                status_idx = (
+                    ALL_STATUSES.index(task.status)
+                    if task.status in ALL_STATUSES
+                    else 0
+                )
+                new_status = st.selectbox(
+                    t("common.status", lang),
+                    options=ALL_STATUSES,
+                    index=status_idx,
+                    format_func=lambda s: translate_status(s, lang),
+                    key=f"{key_prefix}_q_st_{task.task_id}",
+                )
+            with q_col4:
+                st.write("")
+                if st.button(
+                    t("common.update_na_btn", lang),
+                    key=f"{key_prefix}_q_btn_{task.task_id}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    try:
+                        updated_t, logs = apply_quick_na_update(
+                            task=task,
+                            next_action=new_na,
+                            na_due=new_na_due,
+                            status=new_status,
+                            actor_member_id=current_member.member_id,
+                            now=now,
+                        )
+                        repo.update_task(
+                            updated_t, expected_updated_at=task.updated_at
+                        )
+                        for log in logs:
+                            repo.add_activity_log(log)
+                        st.toast(t("common.saved_toast", lang))
+                        st.rerun()
+                    except OptimisticLockError:
+                        st.error(t("common.lock_error", lang))
+                    except ValueError as e:
+                        st.error(str(e))
+
+        # 4行目：F8 全項目の編集・F9 アーカイブ/復元・F10 変更履歴
+        with st.expander(t("task_form.full_edit_expander", lang)):
+            owner_labels = {
+                m.member_id: build_member_load_label(
+                    m, all_tasks, checkins, today, lang, settings
+                )
+                for m in members
+            }
+            member_ids = [m.member_id for m in members]
+
+            e_title = st.text_input(
+                t("task_form.field_title", lang),
+                value=task.title,
+                key=f"{key_prefix}_e_title_{task.task_id}",
+            )
+            e_roles = st.multiselect(
+                t("task_form.field_roles", lang),
+                options=[r.role_id for r in roles],
+                default=[rid for rid in task.role_ids if rid in role_map],
+                format_func=lambda rid: role_map[rid].get_name(lang),
+                key=f"{key_prefix}_e_roles_{task.task_id}",
+            )
+            owner_idx = (
+                member_ids.index(task.owner_member_id)
+                if task.owner_member_id in member_ids
+                else 0
+            )
+            e_owner = st.selectbox(
+                t("task_form.field_owner", lang),
+                options=member_ids,
+                index=owner_idx,
+                format_func=lambda mid: owner_labels.get(mid, mid),
+                key=f"{key_prefix}_e_owner_{task.task_id}",
+            )
+            if (
+                e_owner != task.owner_member_id
+                and e_owner != current_member.member_id
+            ):
+                st.info(
+                    t(
+                        "task_form.request_notice_info",
+                        lang,
+                        owner_name=member_map[e_owner].get_name(lang),
+                    )
+                )
+
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                w_idx = (
+                    ALL_WEIGHTS.index(task.weight)
+                    if task.weight in ALL_WEIGHTS
+                    else 1
+                )
+                e_weight = st.radio(
+                    t("task_form.field_weight", lang),
+                    options=ALL_WEIGHTS,
+                    index=w_idx,
+                    format_func=lambda w: translate_weight(w, lang),
+                    horizontal=True,
+                    key=f"{key_prefix}_e_weight_{task.task_id}",
+                )
+            with c2:
+                p_idx = (
+                    ALL_PRIORITIES.index(task.priority)
+                    if task.priority in ALL_PRIORITIES
+                    else 1
+                )
+                e_priority = st.selectbox(
+                    t("task_form.field_priority", lang),
+                    options=ALL_PRIORITIES,
+                    index=p_idx,
+                    format_func=lambda p: translate_priority(p, lang),
+                    key=f"{key_prefix}_e_prio_{task.task_id}",
+                )
+            with c3:
+                s_idx = (
+                    ALL_STATUSES.index(task.status)
+                    if task.status in ALL_STATUSES
+                    else 0
+                )
+                e_status = st.selectbox(
+                    t("task_form.field_status", lang),
+                    options=ALL_STATUSES,
+                    index=s_idx,
+                    format_func=lambda s: translate_status(s, lang),
+                    key=f"{key_prefix}_e_status_{task.task_id}",
+                )
+            st.caption(t("weight.guide", lang))
+
+            e_na = st.text_input(
+                t("task_form.field_na", lang),
+                value=task.next_action,
+                key=f"{key_prefix}_e_na_{task.task_id}",
+            )
+            d_col1, d_col2 = st.columns(2)
+            with d_col1:
+                e_na_due = st.date_input(
+                    t("task_form.field_na_due", lang),
+                    value=task.na_due,
+                    key=f"{key_prefix}_e_na_due_{task.task_id}",
+                )
+            with d_col2:
+                has_td = st.checkbox(
+                    t("task_form.field_enable_task_due", lang),
+                    value=task.task_due is not None,
+                    key=f"{key_prefix}_e_has_td_{task.task_id}",
+                )
+                e_task_due = (
+                    st.date_input(
+                        t("task_form.field_task_due", lang),
+                        value=task.task_due or (task.na_due + timedelta(days=7)),
+                        key=f"{key_prefix}_e_td_{task.task_id}",
+                    )
+                    if has_td
+                    else None
+                )
+
+            wait_opts = [""] + member_ids
+            curr_wait_idx = (
+                wait_opts.index(task.waiting_on_member_id)
+                if task.waiting_on_member_id in wait_opts
+                else 0
+            )
+            e_waiting = st.selectbox(
+                t("task_form.field_waiting_on", lang),
+                options=wait_opts,
+                index=curr_wait_idx,
+                format_func=lambda mid: (
+                    t("common.none", lang)
+                    if not mid
+                    else member_map[mid].get_name(lang)
+                ),
+                key=f"{key_prefix}_e_wait_{task.task_id}",
+            )
+            e_blocker = st.text_input(
+                t("task_form.field_blocker", lang),
+                value=task.blocker,
+                key=f"{key_prefix}_e_blocker_{task.task_id}",
+            )
+            st.caption(t("task_form.notes_privacy_warning", lang))
+            e_notes = st.text_area(
+                t("task_form.field_notes", lang),
+                value=task.notes,
+                height=65,
+                key=f"{key_prefix}_e_notes_{task.task_id}",
+            )
+
+            btn_col1, btn_col2, btn_col3 = st.columns(3)
+            with btn_col1:
+                if st.button(
+                    t("common.save", lang),
+                    key=f"{key_prefix}_e_save_{task.task_id}",
+                    type="primary",
+                    use_container_width=True,
+                ):
+                    try:
+                        updated_t, logs = apply_full_task_update(
+                            task=task,
+                            title=e_title,
+                            role_ids=e_roles,
+                            owner_member_id=e_owner,
+                            weight=e_weight,
+                            next_action=e_na,
+                            na_due=e_na_due,
+                            task_due=e_task_due,
+                            status=e_status,
+                            waiting_on_member_id=e_waiting,
+                            priority=e_priority,
+                            blocker=e_blocker,
+                            notes=e_notes,
+                            actor_member_id=current_member.member_id,
+                            now=now,
+                        )
+                        repo.update_task(
+                            updated_t, expected_updated_at=task.updated_at
+                        )
+                        for log in logs:
+                            repo.add_activity_log(log)
+                        st.toast(t("common.saved_toast", lang))
+                        st.rerun()
+                    except OptimisticLockError:
+                        st.error(t("common.lock_error", lang))
+                    except ValueError as e:
+                        st.error(str(e))
+
+            with btn_col2:
+                if task.assignment_status == "相談中":
+                    if st.button(
+                        t("task_form.rerequest_btn", lang),
+                        key=f"{key_prefix}_e_rereq_{task.task_id}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            updated_t, logs = apply_full_task_update(
+                                task=task,
+                                title=e_title,
+                                role_ids=e_roles,
+                                owner_member_id=e_owner,
+                                weight=e_weight,
+                                next_action=e_na,
+                                na_due=e_na_due,
+                                task_due=e_task_due,
+                                status=e_status,
+                                waiting_on_member_id=e_waiting,
+                                priority=e_priority,
+                                blocker=e_blocker,
+                                notes=e_notes,
+                                actor_member_id=current_member.member_id,
+                                now=now,
+                                force_rerequest=True,
+                            )
+                            repo.update_task(
+                                updated_t, expected_updated_at=task.updated_at
+                            )
+                            for log in logs:
+                                repo.add_activity_log(log)
+                            st.toast(t("common.saved_toast", lang))
+                            st.rerun()
+                        except OptimisticLockError:
+                            st.error(t("common.lock_error", lang))
+
+            with btn_col3:
+                # F9 アーカイブ／復元
+                if not task.archived:
+                    if st.button(
+                        f"📦 {t('common.archive_btn', lang)}",
+                        key=f"{key_prefix}_e_arch_{task.task_id}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            arch_t, log = toggle_archive_task(
+                                task,
+                                archived=True,
+                                actor_member_id=current_member.member_id,
+                                now=now,
+                            )
+                            repo.update_task(
+                                arch_t, expected_updated_at=task.updated_at
+                            )
+                            repo.add_activity_log(log)
+                            st.toast(t("common.archived_toast", lang))
+                            st.rerun()
+                        except OptimisticLockError:
+                            st.error(t("common.lock_error", lang))
+                else:
+                    if st.button(
+                        f"♻️ {t('common.restore_btn', lang)}",
+                        key=f"{key_prefix}_e_rest_{task.task_id}",
+                        use_container_width=True,
+                    ):
+                        try:
+                            rest_t, log = toggle_archive_task(
+                                task,
+                                archived=False,
+                                actor_member_id=current_member.member_id,
+                                now=now,
+                            )
+                            repo.update_task(
+                                rest_t, expected_updated_at=task.updated_at
+                            )
+                            repo.add_activity_log(log)
+                            st.toast(t("common.restored_toast", lang))
+                            st.rerun()
+                        except OptimisticLockError:
+                            st.error(t("common.lock_error", lang))
+
+            # F10 変更履歴の表示
+            st.divider()
+            logs = repo.list_activity_logs(task_id=task.task_id)
+            st.markdown(f"**{t('task_form.history_section', lang, count=len(logs))}**")
+            if not logs:
+                st.caption(t("task_form.no_history", lang))
+            else:
+                for log in sorted(
+                    logs, key=lambda x: x.timestamp, reverse=True
+                ):
+                    actor = member_map.get(log.member_id)
+                    actor_name = (
+                        actor.get_name(lang) if actor else log.member_id
+                    )
+                    detail = (
+                        f" ({log.field}: {log.old_value} → {log.new_value})"
+                        if log.field
+                        else ""
+                    )
+                    st.caption(
+                        f"・{format_datetime(log.timestamp, lang)} ｜ {actor_name} ｜ `{log.action}`{detail}"
+                    )

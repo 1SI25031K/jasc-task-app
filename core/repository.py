@@ -1016,3 +1016,93 @@ def build_dummy_checkins(today: date) -> list[Checkin]:
             )
             counter += 1
     return checkins
+
+
+def build_dummy_daily_snapshots(
+    today: date,
+    members: list[Member] | None = None,
+    roles: list[Role] | None = None,
+) -> list[DailySnapshot]:
+    """F13 進捗グラフ確認用の過去12週分（週次12点）のダミー DailySnapshot を生成する。"""
+    member_list = members or build_dummy_members()
+    role_list = roles or build_dummy_roles()
+    snapshots: list[DailySnapshot] = []
+
+    base_member_loads = {
+        "m001": [5, 6, 7, 8, 7, 8, 9, 10, 9, 10, 11, 11],
+        "m002": [3, 4, 4, 5, 5, 6, 5, 6, 5, 5, 5, 5],
+        "m003": [4, 5, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11],
+        "m004": [2, 3, 3, 4, 4, 5, 5, 4, 5, 5, 5, 5],
+        "m005": [3, 3, 4, 4, 5, 5, 6, 6, 6, 5, 6, 6],
+        "m006": [2, 3, 4, 4, 5, 5, 5, 6, 6, 6, 6, 6],
+        "m007": [2, 2, 3, 3, 2, 2, 2, 1, 1, 2, 1, 1],
+        "m008": [1, 2, 2, 2, 3, 2, 2, 2, 1, 1, 1, 1],
+    }
+
+    for idx in range(12):
+        weeks_ago = 11 - idx
+        snap_date = today - timedelta(days=weeks_ago * 7)
+        total_all = 18 + idx
+        done_all = max(1, int(total_all * (0.1 + idx * 0.05)))
+        open_all = total_all - done_all
+        overdue_all = max(0, 4 - (idx // 4))
+        rate_all = round(done_all / total_all, 3)
+
+        snapshots.append(
+            DailySnapshot(
+                date=snap_date,
+                scope_type="ALL",
+                scope_id="",
+                total=total_all,
+                done=done_all,
+                open=open_all,
+                overdue=overdue_all,
+                completion_rate=rate_all,
+                auto_load=None,
+            )
+        )
+
+        for r_idx, role in enumerate(role_list):
+            if not role.active:
+                continue
+            r_total = 2 + (r_idx % 3)
+            r_done = min(r_total, (idx + r_idx) // 5)
+            r_open = r_total - r_done
+            r_overdue = 1 if (r_open > 0 and r_idx % 5 == 0) else 0
+            snapshots.append(
+                DailySnapshot(
+                    date=snap_date,
+                    scope_type="role",
+                    scope_id=role.role_id,
+                    total=r_total,
+                    done=r_done,
+                    open=r_open,
+                    overdue=r_overdue,
+                    completion_rate=round(r_done / r_total, 3),
+                    auto_load=None,
+                )
+            )
+
+        for member in member_list:
+            if not member.active:
+                continue
+            series = base_member_loads.get(member.member_id, [3] * 12)
+            m_load = series[idx]
+            m_total = 4
+            m_done = min(3, idx // 4)
+            snapshots.append(
+                DailySnapshot(
+                    date=snap_date,
+                    scope_type="member",
+                    scope_id=member.member_id,
+                    total=m_total,
+                    done=m_done,
+                    open=m_total - m_done,
+                    overdue=1 if m_load >= 9 else 0,
+                    completion_rate=round(m_done / m_total, 3),
+                    auto_load=m_load,
+                )
+            )
+
+    return snapshots
+

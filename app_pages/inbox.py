@@ -15,6 +15,8 @@ from core.session import (
     render_task_card,
 )
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 now = get_now()
@@ -28,8 +30,13 @@ checkins = repo.list_checkins()
 role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 
-st.title(t("inbox.title_with_name", lang, name=current_member.get_name(lang)))
-st.caption(t("inbox.subtitle", lang))
+render_page_header(
+    title=t("inbox.title", lang),
+    subtitle=t("inbox.subtitle", lang),
+    lang=lang,
+    show_new_task=True,
+    key_suffix="inbox",
+)
 
 pending_requests = sorted(
     (
@@ -43,7 +50,7 @@ pending_requests = sorted(
 )
 
 if not pending_requests:
-    st.success(t("inbox.empty_inbox", lang))
+    st.caption(t("inbox.empty_inbox", lang))
 else:
     for task in pending_requests:
         requester = member_map.get(task.requested_by)
@@ -61,7 +68,7 @@ else:
 
         sep = t("common.meta_separator", lang)
         with st.container(border=True):
-            st.markdown(f"#### :material/mail: {task.title}")
+            st.markdown(f"#### {task.title}")
             st.caption(
                 f"**{t('common.requested_by', lang)}**: {req_name}{sep}"
                 f"**{t('common.role', lang)}**: {role_names}{sep}"
@@ -79,7 +86,7 @@ else:
                     t("inbox.accept_btn", lang),
                     key=f"inbox_acc_{task.task_id}",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     try:
                         updated_t, log = accept_assignment(
@@ -108,7 +115,7 @@ else:
                 if st.button(
                     t("inbox.consult_btn", lang),
                     key=f"inbox_con_{task.task_id}",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     if not comment_val.strip():
                         st.error(t("inbox.consult_comment_required", lang))
@@ -145,8 +152,9 @@ consulting_tasks = [
 ]
 if consulting_tasks:
     st.divider()
-    st.subheader(f"💬 {t('inbox.consulting_section', lang)} ({len(consulting_tasks)})")
-    for task in consulting_tasks:
-        render_task_card(
-            task, roles, members, checkins, all_tasks, "inbox_consulting"
-        )
+    st.subheader(f"{t('inbox.consulting_section', lang)} ({len(consulting_tasks)})")
+    with st.container(border=True):
+        for task in consulting_tasks:
+            render_task_card(
+                task, roles, members, checkins, all_tasks, "inbox_consulting"
+            )

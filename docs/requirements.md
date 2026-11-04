@@ -71,6 +71,8 @@
 | reminders_enabled | TRUE/FALSE | 個人 DM リマインドを受け取るか（既定：TRUE） |
 | is_admin | TRUE/FALSE | 管理者フラグ |
 | active | TRUE/FALSE | FALSE の人はログイン不可・通知対象外 |
+| bg_mode | 文字列 | 背景モード（`standard` / `color` / `bing`。既定：`standard`） |
+| bg_color | 文字列 | 背景色識別子（`standard` / `blue` / `teal` / `green` / `yellow` / `orange` / `pink` / `purple` / `gray`。既定：`standard`） |
 
 ### 4.2 `roles`（役職）
 | 列 | 型 | 説明 |

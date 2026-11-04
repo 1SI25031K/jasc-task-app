@@ -4,18 +4,17 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 
-def test_app_displays_board_and_switches_language() -> None:
-    """app.py が起動して役職ボード（F2）が表示され、英語（F11）に切り替えられることを確認する。"""
+def test_app_displays_home_and_switches_language() -> None:
+    """app.py が起動してホーム（あいさつ画面）が表示され、英語（F11）に切り替えられることを確認する。"""
     app_path = Path(__file__).resolve().parent.parent / "app.py"
     at = AppTest.from_file(str(app_path)).run()
     assert not at.exception
-    assert len(at.title) == 1
-    assert "役職ボード" in at.title[0].value
+    assert any("さん、" in h.value for h in at.html)
 
-    # 英語に切り替えて再実行
-    at.sidebar.radio(key="lang_choice").set_value("en").run()
+    # 英語に切り替えて再実行（右上アバターポップオーバー内の言語切替）
+    at.radio(key="topbar_lang_radio").set_value("en").run()
     assert not at.exception
-    assert "Role Board" in at.title[0].value
+    assert any("Good " in h.value for h in at.html)
 
 
 

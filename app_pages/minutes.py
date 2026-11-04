@@ -49,10 +49,18 @@ owner_labels = {
     for m in members
 }
 
-st.title(f":material/edit_note: {t('minutes.title', lang)}")
+from core.ui.page_header import render_page_header
+
+render_page_header(
+    title=t("minutes.title", lang),
+    subtitle=t("minutes.ai_note", lang),
+    lang=lang,
+    show_new_task=False,
+    key_suffix="minutes",
+)
 
 # 注意書き（5.7・S9：「個人情報は貼り付けないでください」）
-st.warning(t("minutes.privacy_warning", lang))
+st.caption(t("minutes.privacy_warning", lang))
 
 col_m1, col_m2 = st.columns([1, 2])
 with col_m1:
@@ -72,6 +80,7 @@ sample_default_text = t("minutes.sample_text", lang)
 minutes_text = st.text_area(
     t("minutes.minutes_text_label", lang),
     value=st.session_state.get("minutes_raw_text", sample_default_text),
+    placeholder=t("minutes.minutes_text_placeholder", lang),
     height=150,
     key="minutes_text_area",
 )
@@ -270,4 +279,4 @@ if candidates_list:
         st.toast(
             t("minutes.saved_count_toast", lang, count=len(selected_Only))
         )
-        st.switch_page("pages/all_tasks.py")
+        st.switch_page("app_pages/all_tasks.py")

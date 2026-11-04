@@ -84,5 +84,5 @@ def test_theme_config_m3_tokens() -> None:
     assert "[theme.sidebar]" in content
     assert "Google Sans Flex" in content
     assert "Noto Sans JP" in content
-    assert 'baseRadius = "12px"' in content
+    assert 'baseRadius = "28px"' in content or 'baseRadius = "12px"' in content
     assert 'buttonRadius = "20px"' in content

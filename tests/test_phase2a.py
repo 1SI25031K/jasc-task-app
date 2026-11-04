@@ -149,16 +149,16 @@ def test_pages_2a_and_2b_render_without_exception() -> None:
     """フェーズ2の全10画面が日本語・英語ともにエラーなく描画され、操作が動作することを確認する。"""
     app_path = Path(__file__).resolve().parent.parent / "app.py"
     all_page_files = [
-        "pages/board.py",
-        "pages/role_detail.py",
-        "pages/my_tasks.py",
-        "pages/alerts.py",
-        "pages/all_tasks.py",
-        "pages/inbox.py",
-        "pages/checkin.py",
-        "pages/capacity_map.py",
-        "pages/progress.py",
-        "pages/minutes.py",
+        "app_pages/board.py",
+        "app_pages/role_detail.py",
+        "app_pages/my_tasks.py",
+        "app_pages/alerts.py",
+        "app_pages/all_tasks.py",
+        "app_pages/inbox.py",
+        "app_pages/checkin.py",
+        "app_pages/capacity_map.py",
+        "app_pages/progress.py",
+        "app_pages/minutes.py",
     ]
     for page_file in all_page_files:
         at = AppTest.from_file(str(app_path), default_timeout=15).run()
@@ -173,14 +173,14 @@ def test_pages_2a_and_2b_render_without_exception() -> None:
 
     # F16 体感負荷チェックイン：ボタン1クリックで回答できることを確認
     at_checkin = AppTest.from_file(str(app_path), default_timeout=15).run()
-    at_checkin.switch_page("pages/checkin.py").run()
+    at_checkin.switch_page("app_pages/checkin.py").run()
     at_checkin.button(key="checkin_btn_7").click().run()
     assert not at_checkin.exception
     assert len(at_checkin.success) == 1
 
     # F14 NA生成：候補抽出ボタンが動くことを確認
     at_min = AppTest.from_file(str(app_path), default_timeout=15).run()
-    at_min.switch_page("pages/minutes.py").run()
+    at_min.switch_page("app_pages/minutes.py").run()
     at_min.button(key="minutes_extract_btn").click().run()
     assert not at_min.exception
     assert len(at_min.session_state["extracted_na_candidates"]) == 2

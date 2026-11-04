@@ -19,7 +19,7 @@ ARTIFACT_DIR = Path(
     "/Users/kosei/.gemini/antigravity/brain/ffd16fa2-53e1-4d2b-8a66-a0d9b87b1c91"
 )
 APP_DIR = Path("/Users/kosei/jasc-task-app")
-ST_PORT = 8501
+ST_PORT = 8502
 CDP_PORT = 9229
 BASE_URL = f"http://127.0.0.1:{ST_PORT}"
 
@@ -237,10 +237,11 @@ def run_authenticated_session() -> None:
                 await cdp.call("Page.enable")
 
                 # ==========================================
-                # 1. 全10画面（PC 日本語 1280x800 ライトモード）
+                # 1. 全11画面（PC 日本語 1280x800 ライトモード）
                 # ==========================================
                 pc_pages = [
-                    (f"{BASE_URL}/?lang=ja", "m3_board_pc_ja.png"),
+                    (f"{BASE_URL}/?lang=ja", "m3_home_pc_ja.png"),
+                    (f"{BASE_URL}/board?lang=ja", "m3_board_pc_ja.png"),
                     (f"{BASE_URL}/role_detail?lang=ja", "m3_role_detail_pc_ja.png"),
                     (f"{BASE_URL}/my_tasks?lang=ja", "m3_my_tasks_pc_ja.png"),
                     (f"{BASE_URL}/alerts?lang=ja", "m3_alerts_pc_ja.png"),
@@ -248,8 +249,8 @@ def run_authenticated_session() -> None:
                     (f"{BASE_URL}/inbox?lang=ja", "m3_inbox_pc_ja.png"),
                     (f"{BASE_URL}/capacity_map?lang=ja", "m3_capacity_map_pc_ja.png"),
                     (f"{BASE_URL}/checkin?lang=ja", "m3_checkin_pc_ja.png"),
-                    (f"{BASE_URL}/progress?lang=ja", "m3_progress_pc_ja.png"),
                     (f"{BASE_URL}/minutes?lang=ja", "m3_minutes_pc_ja.png"),
+                    (f"{BASE_URL}/progress?lang=ja", "m3_progress_pc_ja.png"),
                 ]
                 for url, filename in pc_pages:
                     await cdp.navigate_and_capture(
@@ -260,7 +261,8 @@ def run_authenticated_session() -> None:
                 # 2. スマホ幅（375x812 日本語 ライトモード）
                 # ==========================================
                 mobile_pages = [
-                    (f"{BASE_URL}/?lang=ja", "m3_board_mobile_ja.png"),
+                    (f"{BASE_URL}/?lang=ja", "m3_home_mobile_ja.png"),
+                    (f"{BASE_URL}/board?lang=ja", "m3_board_mobile_ja.png"),
                     (f"{BASE_URL}/checkin?lang=ja", "m3_checkin_mobile_ja.png"),
                     (f"{BASE_URL}/capacity_map?lang=ja", "m3_capacity_mobile_ja.png"),
                     (f"{BASE_URL}/my_tasks?lang=ja", "m3_my_tasks_mobile_ja.png"),
@@ -274,13 +276,13 @@ def run_authenticated_session() -> None:
                 # 3. 英語 UI（PC 1280x800 & スマホ 375x812）
                 # ==========================================
                 await cdp.navigate_and_capture(
-                    f"{BASE_URL}/?lang=en", "m3_board_pc_en.png", 1280, 800, False, color_scheme="light"
+                    f"{BASE_URL}/?lang=en", "m3_home_pc_en.png", 1280, 800, False, color_scheme="light"
+                )
+                await cdp.navigate_and_capture(
+                    f"{BASE_URL}/board?lang=en", "m3_board_pc_en.png", 1280, 800, False, color_scheme="light"
                 )
                 await cdp.navigate_and_capture(
                     f"{BASE_URL}/capacity_map?lang=en", "m3_capacity_pc_en.png", 1280, 800, False, color_scheme="light"
-                )
-                await cdp.navigate_and_capture(
-                    f"{BASE_URL}/capacity_map?lang=en", "m3_capacity_mobile_en.png", 375, 812, True, color_scheme="light"
                 )
                 await cdp.navigate_and_capture(
                     f"{BASE_URL}/all_tasks?lang=en", "m3_all_tasks_pc_en.png", 1280, 800, False, color_scheme="light"
@@ -290,7 +292,8 @@ def run_authenticated_session() -> None:
                 # 4. ダークモード（PC 1280x800 ダークモード）
                 # ==========================================
                 dark_pages = [
-                    (f"{BASE_URL}/?lang=ja", "m3_board_pc_ja_dark.png"),
+                    (f"{BASE_URL}/?lang=ja", "m3_home_pc_ja_dark.png"),
+                    (f"{BASE_URL}/board?lang=ja", "m3_board_pc_ja_dark.png"),
                     (f"{BASE_URL}/capacity_map?lang=ja", "m3_capacity_pc_ja_dark.png"),
                     (f"{BASE_URL}/minutes?lang=ja", "m3_minutes_pc_ja_dark.png"),
                 ]

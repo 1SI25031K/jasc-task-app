@@ -31,21 +31,27 @@ role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 role_ids = [r.role_id for r in roles]
 
+from core.ui.page_header import render_page_header
+
 default_rid = st.session_state.get("selected_role_id", role_ids[0] if role_ids else "")
 default_idx = role_ids.index(default_rid) if default_rid in role_ids else 0
 
-hdr_col1, hdr_col2 = st.columns([3, 1])
-with hdr_col1:
-    st.title(f":material/folder: {t('role_detail.title', lang)}")
-with hdr_col2:
-    selected_role_id = st.selectbox(
-        t("role_detail.select_role", lang),
-        options=role_ids,
-        index=default_idx,
-        format_func=lambda rid: role_map[rid].get_name(lang),
-        key="role_detail_select",
-    )
-    st.session_state["selected_role_id"] = selected_role_id
+render_page_header(
+    title=t("role_detail.title", lang),
+    subtitle="",
+    lang=lang,
+    show_new_task=True,
+    key_suffix="role_detail",
+)
+
+selected_role_id = st.selectbox(
+    t("role_detail.select_role", lang),
+    options=role_ids,
+    index=default_idx,
+    format_func=lambda rid: role_map[rid].get_name(lang),
+    key="role_detail_select",
+)
+st.session_state["selected_role_id"] = selected_role_id
 
 selected_role = role_map[selected_role_id]
 role_tasks = [t for t in all_tasks if selected_role_id in t.role_ids]
@@ -87,14 +93,14 @@ with top_col1:
         if st.button(
             t("role_detail.create_for_role_btn", lang),
             type="primary",
-            use_container_width=True,
+            width="stretch",
             key="role_detail_create_btn",
         ):
             open_create_task_dialog(default_role_id=selected_role_id)
 
 with top_col2:
     with st.container(border=True):
-        st.markdown(f"**:material/group: {t('role_detail.assigned_members', lang)}**")
+        st.markdown(f"**{t('role_detail.assigned_members', lang)}**")
         this_role_assignments = [
             ra for ra in role_assignments if ra.role_id == selected_role_id
         ]
@@ -116,24 +122,25 @@ with top_col2:
                     latest_c.score if latest_c else None, is_fresh, lang
                 )
                 st.markdown(
-                    f"・:blue-badge[{kind_label}] **{m.get_name(lang)}** ｜ "
+                    f"・:gray-badge[{kind_label}] **{m.get_name(lang)}** ｜ "
                     f"{t('common.auto_load_short', lang, pt=auto_pt)} ｜ {subj_badge}"
                 )
 
 # 未完了タスク一覧
-st.subheader(f"📌 {t('role_detail.open_tasks_section', lang)} ({len(open_tasks)})")
+st.subheader(f"{t('role_detail.open_tasks_section', lang)} ({len(open_tasks)})")
 if not open_tasks:
-    st.info(t("role_detail.no_open_tasks", lang))
+    st.caption(t("role_detail.no_open_tasks", lang))
 else:
-    for task in open_tasks:
-        render_task_card(
-            task=task,
-            roles=roles,
-            members=members,
-            checkins=checkins,
-            all_tasks=all_tasks,
-            key_prefix="role_open",
-        )
+    with st.container(border=True):
+        for task in open_tasks:
+            render_task_card(
+                task=task,
+                roles=roles,
+                members=members,
+                checkins=checkins,
+                all_tasks=all_tasks,
+                key_prefix="role_open",
+            )
 
 # 完了タスク（折りたたみ）
 with st.expander(

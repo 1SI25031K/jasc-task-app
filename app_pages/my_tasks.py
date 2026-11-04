@@ -16,6 +16,8 @@ from core.session import (
     render_task_card,
 )
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 today = get_today()
@@ -27,19 +29,13 @@ all_tasks = repo.list_tasks(include_archived=False)
 checkins = repo.list_checkins()
 settings = repo.get_settings()
 
-hdr_col1, hdr_col2 = st.columns([3, 1])
-with hdr_col1:
-    st.title(
-        t("my_tasks.title_with_name", lang, name=current_member.get_name(lang))
-    )
-with hdr_col2:
-    if st.button(
-        t("app.new_task_btn", lang),
-        type="primary",
-        use_container_width=True,
-        key="my_tasks_new_btn",
-    ):
-        open_create_task_dialog()
+render_page_header(
+    title=t("my_tasks.title", lang),
+    subtitle="",
+    lang=lang,
+    show_new_task=True,
+    key_suffix="my_tasks",
+)
 
 # 自分の自動負荷・体感負荷サマリー（F4）
 breakdown = calc_member_auto_load_breakdown(
@@ -110,38 +106,42 @@ tabs = st.tabs(
 
 with tabs[0]:
     if not active_tasks:
-        st.info(t("my_tasks.empty_tab", lang))
+        st.caption(t("my_tasks.empty_tab", lang))
     else:
-        for task in active_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "my_active"
-            )
+        with st.container(border=True):
+            for task in active_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "my_active"
+                )
 
 with tabs[1]:
     st.caption(t("my_tasks.go_to_inbox_hint", lang))
     if not pending_req_tasks:
-        st.info(t("my_tasks.empty_tab", lang))
+        st.caption(t("my_tasks.empty_tab", lang))
     else:
-        for task in pending_req_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "my_req"
-            )
+        with st.container(border=True):
+            for task in pending_req_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "my_req"
+                )
 
 with tabs[2]:
     if not waiting_tasks:
-        st.info(t("my_tasks.empty_tab", lang))
+        st.caption(t("my_tasks.empty_tab", lang))
     else:
-        for task in waiting_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "my_wait"
-            )
+        with st.container(border=True):
+            for task in waiting_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "my_wait"
+                )
 
 with tabs[3]:
     if not done_tasks:
-        st.info(t("my_tasks.empty_tab", lang))
+        st.caption(t("my_tasks.empty_tab", lang))
     else:
-        for task in done_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "my_done"
-            )
+        with st.container(border=True):
+            for task in done_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "my_done"
+                )
 

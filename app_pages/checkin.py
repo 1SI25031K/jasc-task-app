@@ -16,6 +16,8 @@ from core.session import (
     get_today,
 )
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 today = get_today()
@@ -24,20 +26,21 @@ current_member = get_current_member()
 tasks = repo.list_tasks(include_archived=False)
 settings = repo.get_settings()
 
-st.title(
-    t("checkin.title_with_name", lang, name=current_member.get_name(lang))
+render_page_header(
+    title=t("checkin.title", lang),
+    subtitle=t("checkin.subtitle", lang),
+    lang=lang,
+    show_new_task=False,
+    key_suffix="checkin",
 )
-st.markdown(t("checkin.subtitle", lang))
 
-# 注意書き（4.5・S9：「体調などの詳しい理由は書かなくて大丈夫です（全員が閲覧できます）」）
+# 注意書き（4.5・S9：「個人情報や詳細な理由は記入不要です」）
 st.caption(t("checkin.privacy_notice", lang))
 comment_input = st.text_input(
     t("checkin.comment_label", lang),
     max_chars=100,
     key="checkin_comment_input",
 )
-
-st.subheader(t("checkin.tap_instruction", lang))
 
 
 def _submit_score(score_val: int) -> None:
@@ -66,40 +69,21 @@ def _submit_score(score_val: int) -> None:
     st.toast(t("checkin.saved_message", lang, score=score_val))
 
 
-# 1〜4（緑）、5〜7（黄）、8〜10（赤）の3グループで1クリックボタンを配置（6.3）
+# 1〜10 の数字ボタンを単一カード内に横並び配置（顔文字全廃、端にラベル表示）
 with st.container(border=True):
-    st.markdown(f"**{t('checkin.group_low', lang)}**")
-    c_low = st.columns(4)
-    for idx, val in enumerate([1, 2, 3, 4]):
-        with c_low[idx]:
-            if st.button(
-                f":material/sentiment_satisfied: {val}",
-                key=f"checkin_btn_{val}",
-                use_container_width=True,
-            ):
-                _submit_score(val)
+    lbl_col1, lbl_col2 = st.columns(2)
+    with lbl_col1:
+        st.caption(f"1: {t('checkin.group_low', lang)}")
+    with lbl_col2:
+        st.caption(f"<div style='text-align: right;'>10: {t('checkin.group_high', lang)}</div>", unsafe_allow_html=True)
 
-with st.container(border=True):
-    st.markdown(f"**{t('checkin.group_mid', lang)}**")
-    c_mid = st.columns(3)
-    for idx, val in enumerate([5, 6, 7]):
-        with c_mid[idx]:
+    num_cols = st.columns(10)
+    for val in range(1, 11):
+        with num_cols[val - 1]:
             if st.button(
-                f":material/sentiment_neutral: {val}",
+                str(val),
                 key=f"checkin_btn_{val}",
-                use_container_width=True,
-            ):
-                _submit_score(val)
-
-with st.container(border=True):
-    st.markdown(f"**{t('checkin.group_high', lang)}**")
-    c_high = st.columns(3)
-    for idx, val in enumerate([8, 9, 10]):
-        with c_high[idx]:
-            if st.button(
-                f":material/sentiment_dissatisfied: {val}",
-                key=f"checkin_btn_{val}",
-                use_container_width=True,
+                width="stretch",
             ):
                 _submit_score(val)
 
@@ -117,13 +101,13 @@ if feedback:
     )
 
 st.divider()
-st.subheader(f"🕒 {t('checkin.recent_history_title', lang)}")
+st.subheader(t("checkin.recent_history_title", lang))
 history = list(
     reversed(repo.list_checkins(member_id=current_member.member_id))
 )
 for item in history[:6]:
     badge = format_subjective_score_badge(item.score, True, lang)
-    note_str = f" — 💬 {item.comment}" if item.comment else ""
+    note_str = f" — {item.comment}" if item.comment else ""
     st.markdown(
         f"・**{format_date(item.date, lang)}**: {badge} "
         f"（{t('common.auto_load_short', lang, pt=item.auto_load_at_checkin)}）{note_str}"

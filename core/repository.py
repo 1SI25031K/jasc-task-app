@@ -39,6 +39,12 @@ class Repository(ABC):
         """メンバーの表示言語設定（ja / en）を更新する。"""
 
     @abstractmethod
+    def update_member_bg(
+        self, member_id: str, bg_mode: str, bg_color: str
+    ) -> None:
+        """メンバーの背景設定（bg_mode, bg_color）を更新する。"""
+
+    @abstractmethod
     def list_roles(self, active_only: bool = False) -> list[Role]:
         """役職一覧を取得する。"""
 
@@ -197,6 +203,18 @@ class InMemoryRepository(Repository):
         for m in self._members:
             if m.member_id == member_id:
                 m.lang = "en" if lang == "en" else "ja"
+                return
+
+    def update_member_bg(
+        self, member_id: str, bg_mode: str, bg_color: str
+    ) -> None:
+        """メンバーの背景設定（bg_mode, bg_color）を更新する。"""
+        for m in self._members:
+            if m.member_id == member_id:
+                m.bg_mode = (
+                    bg_mode if bg_mode in ("standard", "color", "bing") else "standard"
+                )
+                m.bg_color = bg_color or "standard"
                 return
 
     def list_roles(self, active_only: bool = False) -> list[Role]:

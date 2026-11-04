@@ -185,7 +185,10 @@ def get_repo() -> Repository:
 def get_lang() -> LangCode:
     """現在の表示言語（'ja' または 'en'）を取得する。"""
     init_session_state()
-    val = st.session_state.get("lang_choice", st.session_state.get("lang", "ja"))
+    val = st.session_state.get(
+        "topbar_lang_radio",
+        st.session_state.get("lang_choice", st.session_state.get("lang", "ja")),
+    )
     return "en" if val == "en" else "ja"
 
 
@@ -197,7 +200,7 @@ def get_current_member() -> Member:
 
 
 def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
-    """6.3 ステータスの色（未着手=グレー、進行中=青、待ち=黄、完了=緑、期限切れ=赤）とアイコンを Markdown バッジで返す。"""
+    """ステータスとアイコンを Markdown バッジで返す（赤は期限超過NAのみに限定）。"""
     status_label = translate_status(task.status, lang)
     status_icon_map = {
         "未着手": ":material/radio_button_unchecked:",
@@ -205,15 +208,8 @@ def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
         "待ち": ":material/hourglass_empty:",
         "完了": ":material/check_circle:",
     }
-    color_map = {
-        "未着手": "gray",
-        "進行中": "blue",
-        "待ち": "orange",
-        "完了": "green",
-    }
-    color = color_map.get(task.status, "gray")
     icon = status_icon_map.get(task.status, "")
-    badges = [f":{color}-badge[{icon} {status_label}]"]
+    badges = [f":gray-badge[{icon} {status_label}]"]
 
     if is_overdue_na(task, today):
         badges.append(
@@ -221,16 +217,16 @@ def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
         )
     elif is_due_this_week(task, today):
         badges.append(
-            f":orange-badge[:material/schedule: {t('common.due_this_week_badge', lang)}]"
+            f":gray-badge[:material/schedule: {t('common.due_this_week_badge', lang)}]"
         )
 
     if task.assignment_status == "依頼中":
         badges.append(
-            f":violet-badge[:material/forward_to_inbox: {translate_assignment_status('依頼中', lang)}]"
+            f":gray-badge[:material/forward_to_inbox: {translate_assignment_status('依頼中', lang)}]"
         )
     elif task.assignment_status == "相談中":
         badges.append(
-            f":orange-badge[:material/chat: {translate_assignment_status('相談中', lang)}]"
+            f":gray-badge[:material/chat: {translate_assignment_status('相談中', lang)}]"
         )
 
     if task.archived:
@@ -244,14 +240,12 @@ def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
 def format_subjective_score_badge(
     score: int | None, is_fresh: bool, lang: LangCode
 ) -> str:
-    """6.3 体感負荷の色（1〜4=緑、5〜7=黄、8〜10=赤）とアイコン・数値を合わせて表示する。"""
+    """体感負荷（1〜7=グレー単色、8〜10=赤アラート）と数値を合わせて表示する。"""
     if score is None or not is_fresh:
         return f":gray-badge[:material/help_outline: {t('common.unanswered', lang)}]"
-    if score <= 4:
-        return f":green-badge[:material/sentiment_satisfied: {score} / 10]"
     if score <= 7:
-        return f":orange-badge[:material/sentiment_neutral: {score} / 10]"
-    return f":red-badge[:material/sentiment_dissatisfied: {score} / 10]"
+        return f":gray-badge[:material/speed: {score} / 10]"
+    return f":red-badge[:material/speed: {score} / 10]"
 
 
 @st.dialog("タスク作成 / Create Task", width="large")
@@ -393,7 +387,7 @@ def open_create_task_dialog(default_role_id: str = "") -> None:
     )
 
     if st.button(
-        t("common.save", lang), type="primary", use_container_width=True
+        t("common.save", lang), type="primary", width="stretch"
     ):
         if not title.strip() or not selected_roles or not next_action.strip():
             st.error(t("task_form.validation_error_required", lang))
@@ -432,7 +426,7 @@ def render_task_card(
     all_tasks: list[Task],
     key_prefix: str,
 ) -> None:
-    """タスク1件のカード表示と、「NAを更新」簡易フォーム（F8）・全項目編集（F8）・アーカイブ/復元（F9）・履歴（F10）を描画する。"""
+    """タスク1件を区切り線付きリスト行（Expander）として描画し、開くとクイック更新・詳細編集・履歴を表示する。"""
     repo = get_repo()
     lang = get_lang()
     today = get_today()
@@ -448,33 +442,42 @@ def render_task_card(
         role_map[rid].get_name(lang) for rid in task.role_ids if rid in role_map
     )
 
-    with st.container(border=True):
-        # 1行目：バッジ・タイトル・担当・役職・重さ
+    status_icon_map = {
+        "未着手": ":material/radio_button_unchecked:",
+        "進行中": ":material/play_circle:",
+        "待ち": ":material/hourglass_empty:",
+        "完了": ":material/check_circle:",
+    }
+    is_overdue = is_overdue_na(task, today)
+    icon = (
+        ":material/error:"
+        if is_overdue
+        else status_icon_map.get(task.status, ":material/task:")
+    )
+
+    due_str = format_date(task.na_due, lang)
+    overdue_suffix = f"  ·  [{t('common.overdue_badge', lang)}]" if is_overdue else ""
+    summary_label = f"{task.title}  —  {task.next_action} ({due_str}){overdue_suffix}"
+
+    with st.expander(summary_label, icon=icon):
+        # 1行目：バッジ・メタ情報
         badges_md = format_status_badge(task, today, lang)
-        weight_label = translate_weight(task.weight, lang)
-        st.markdown(
-            f"{badges_md} **{task.title}**"
-        )
         meta_parts = [
             f"**{t('common.role', lang)}**: {role_names}",
             f"**{t('common.owner', lang)}**: {owner_name}",
-            f"**{t('common.weight', lang)}**: {weight_label}",
-            f"**{t('common.due_date', lang)}**: {format_date(task.na_due, lang)}",
+            f"**{t('common.weight', lang)}**: {translate_weight(task.weight, lang)}",
+            f"**{t('common.due_date', lang)}**: {due_str}",
         ]
         if task.requested_by and task.requested_by in member_map:
             req_name = member_map[task.requested_by].get_name(lang)
             meta_parts.append(
                 f"**{t('common.requested_by', lang)}**: {req_name}"
             )
+        st.markdown(badges_md)
         st.caption(t("common.meta_separator", lang).join(meta_parts))
 
-        # 2行目：現在の NA
-        st.markdown(
-            f":material/arrow_forward: **{t('common.next_action', lang)}**: {task.next_action}"
-        )
-
         if task.assignment_status == "相談中" and task.assignment_comment:
-            st.warning(
+            st.caption(
                 t(
                     "task_form.consult_comment_box",
                     lang,
@@ -482,8 +485,12 @@ def render_task_card(
                 )
             )
 
-        # 3行目：F8「NA を更新」簡易フォーム（2クリック以内で操作可能）
-        with st.expander(t("task_form.quick_na_expander", lang)):
+        tab_quick, tab_full = st.tabs(
+            [t("task_form.tab_quick", lang), t("task_form.tab_full", lang)]
+        )
+
+        with tab_quick:
+            # F8「NA を更新」簡易フォーム（2クリック以内で操作可能）
             q_col1, q_col2, q_col3, q_col4 = st.columns([3, 2, 2, 1.5])
             with q_col1:
                 new_na = st.text_input(
@@ -516,7 +523,7 @@ def render_task_card(
                     t("common.update_na_btn", lang),
                     key=f"{key_prefix}_q_btn_{task.task_id}",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     try:
                         updated_t, logs = apply_quick_na_update(
@@ -532,15 +539,15 @@ def render_task_card(
                         )
                         for log in logs:
                             repo.add_activity_log(log)
-                        st.toast(t("common.saved_toast", lang))
+                            st.toast(t("common.saved_toast", lang))
                         st.rerun()
                     except OptimisticLockError:
                         st.error(t("common.lock_error", lang))
                     except ValueError:
                         st.error(t("common.general_error", lang))
 
-        # 4行目：F8 全項目の編集・F9 アーカイブ/復元・F10 変更履歴
-        with st.expander(t("task_form.full_edit_expander", lang)):
+        with tab_full:
+            # F8 全項目の編集・F9 アーカイブ/復元・F10 変更履歴
             owner_labels = {
                 m.member_id: build_member_load_label(
                     m, all_tasks, checkins, today, lang, settings
@@ -577,7 +584,7 @@ def render_task_card(
                 e_owner != task.owner_member_id
                 and e_owner != current_member.member_id
             ):
-                st.info(
+                st.caption(
                     t(
                         "task_form.request_notice_info",
                         lang,
@@ -692,7 +699,7 @@ def render_task_card(
                     t("common.save", lang),
                     key=f"{key_prefix}_e_save_{task.task_id}",
                     type="primary",
-                    use_container_width=True,
+                    width="stretch",
                 ):
                     try:
                         updated_t, logs = apply_full_task_update(
@@ -729,7 +736,7 @@ def render_task_card(
                     if st.button(
                         t("task_form.rerequest_btn", lang),
                         key=f"{key_prefix}_e_rereq_{task.task_id}",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         try:
                             updated_t, logs = apply_full_task_update(
@@ -768,7 +775,7 @@ def render_task_card(
                     if st.button(
                         f":material/archive: {t('common.archive_btn', lang)}",
                         key=f"{key_prefix}_e_arch_{task.task_id}",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         try:
                             arch_t, log = toggle_archive_task(
@@ -791,7 +798,7 @@ def render_task_card(
                     if st.button(
                         f":material/unarchive: {t('common.restore_btn', lang)}",
                         key=f"{key_prefix}_e_rest_{task.task_id}",
-                        use_container_width=True,
+                        width="stretch",
                     ):
                         try:
                             rest_t, log = toggle_archive_task(
@@ -815,6 +822,26 @@ def render_task_card(
             st.divider()
             logs = repo.list_activity_logs(task_id=task.task_id)
             st.markdown(f"**{t('task_form.history_section', lang, count=len(logs))}**")
+            if not logs:
+                st.caption(t("task_form.no_history", lang))
+            else:
+                for log in sorted(
+                    logs, key=lambda x: x.timestamp, reverse=True
+                ):
+                    actor = member_map.get(log.member_id)
+                    actor_name = (
+                        actor.get_name(lang) if actor else log.member_id
+                    )
+                    detail = (
+                        f" ({log.field}: {log.old_value} → {log.new_value})"
+                        if log.field
+                        else ""
+                    )
+                    bullet = "• " if lang == "en" else "・"
+                    sep = t("common.meta_separator", lang)
+                    st.caption(
+                        f"{bullet}{format_datetime(log.timestamp, lang)}{sep}{actor_name}{sep}`{log.action}`{detail}"
+                    )
             if not logs:
                 st.caption(t("task_form.no_history", lang))
             else:

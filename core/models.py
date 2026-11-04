@@ -81,6 +81,8 @@ class Member:
     reminders_enabled: bool = True
     is_admin: bool = False
     active: bool = True
+    bg_mode: str = "standard"
+    bg_color: str = "standard"
 
     def get_name(self, lang: LangCode = "ja") -> str:
         """指定された言語に応じた表示名を返す。英語名が空なら display_name を返す。"""

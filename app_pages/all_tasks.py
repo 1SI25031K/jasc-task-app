@@ -19,6 +19,8 @@ from core.session import (
     render_task_card,
 )
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 
@@ -31,17 +33,13 @@ checkins = repo.list_checkins()
 role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 
-hdr_col1, hdr_col2 = st.columns([3, 1])
-with hdr_col1:
-    st.title(f":material/format_list_bulleted: {t('all_tasks.title', lang)}")
-with hdr_col2:
-    if st.button(
-        t("app.new_task_btn", lang),
-        type="primary",
-        use_container_width=True,
-        key="all_tasks_new_btn",
-    ):
-        open_create_task_dialog()
+render_page_header(
+    title=t("all_tasks.title", lang),
+    subtitle="",
+    lang=lang,
+    show_new_task=True,
+    key_suffix="all_tasks",
+)
 
 with st.container(border=True):
     f_col1, f_col2, f_col3 = st.columns(3)
@@ -123,10 +121,11 @@ filtered = filter_tasks(
 st.markdown(f"**{t('all_tasks.result_count', lang, count=len(filtered))}**")
 
 if not filtered:
-    st.info(t("alerts.empty_section", lang))
+    st.caption(t("alerts.empty_section", lang))
 else:
-    for task in filtered:
-        render_task_card(
-            task, roles, members, checkins, active_tasks, "all_list"
-        )
+    with st.container(border=True):
+        for task in filtered:
+            render_task_card(
+                task, roles, members, checkins, active_tasks, "all_list"
+            )
 

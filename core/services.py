@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Iterable
 import uuid
 
@@ -534,5 +534,166 @@ def filter_tasks(
                 continue
         results.append(t)
     return sorted(results, key=lambda item: (item.na_due, item.task_id))
+
+
+def get_greeting_key(now_time: datetime | time) -> str:
+    """現在時刻（Asia/Tokyo）から挨拶キー（'morning' / 'afternoon' / 'evening'）を判定する。
+
+    - 5:00 〜 10:59: 'morning'（おはようございます）
+    - 11:00 〜 17:59: 'afternoon'（こんにちは）
+    - 18:00 〜 翌4:59: 'evening'（こんばんは）
+    """
+    t = now_time.time() if isinstance(now_time, datetime) else now_time
+    if time(5, 0) <= t < time(11, 0):
+        return "morning"
+    if time(11, 0) <= t < time(18, 0):
+        return "afternoon"
+    return "evening"
+
+
+def build_home_summary(
+    member_id: str,
+    tasks: Iterable[Task],
+    today: date,
+    lang: LangCode = "ja",
+) -> str:
+    """ホーム画面に表示するログイン中メンバーの状況1行サマリーを構築する。"""
+    active_tasks = [
+        t
+        for t in tasks
+        if t.owner_member_id == member_id
+        and not t.archived
+        and t.status != "完了"
+    ]
+    overdue_count = sum(1 for t in active_tasks if t.na_due < today)
+    week_limit = today + timedelta(days=7)
+    due_week_count = sum(
+        1 for t in active_tasks if today <= t.na_due <= week_limit
+    )
+
+    requests_count = sum(
+        1
+        for t in tasks
+        if t.owner_member_id == member_id
+        and not t.archived
+        and t.assignment_status in ("依頼中", "相談中")
+        and t.requested_by != member_id
+    )
+
+    parts: list[str] = []
+    if lang == "en":
+        if overdue_count > 0:
+            parts.append(
+                f"{overdue_count} NA{'s' if overdue_count > 1 else ''} past due"
+            )
+        if due_week_count > 0:
+            parts.append(
+                f"{due_week_count} NA{'s' if due_week_count > 1 else ''} due this week"
+            )
+        if requests_count > 0:
+            parts.append(
+                f"{requests_count} request{'s' if requests_count > 1 else ''} for you"
+            )
+
+        if not parts:
+            return "All caught up! No urgent tasks or requests pending."
+        return " · ".join(parts)
+    else:
+        if overdue_count > 0:
+            parts.append(f"期限を過ぎた NA {overdue_count}件")
+        if due_week_count > 0:
+            parts.append(f"今週期限の NA {due_week_count}件")
+        if requests_count > 0:
+            parts.append(f"あなたへの依頼 {requests_count}件")
+
+        if not parts:
+            return "現在対応が必要な急ぎのタスクや依頼はありません。"
+        return " ・ ".join(parts)
+
+
+@dataclass(frozen=True)
+class HomeAlert:
+    """ホーム画面に表示するおすすめ・お知らせカードを表すデータクラス。"""
+
+    alert_type: str  # "inbox" | "checkin" | "alerts"
+    icon: str
+    title_key: str
+    desc_key: str
+    target_page: str
+    count: int = 0
+
+
+def get_home_alerts(
+    member_id: str,
+    tasks: Iterable[Task],
+    checkins: Iterable[Checkin],
+    today: date,
+    dismissed_types: set[str] | None = None,
+) -> list[HomeAlert]:
+    """ホーム画面に表示するお知らせカードのリストを優先度順に返す（お知らせがない場合は空リスト）。"""
+    dismissed = dismissed_types or set()
+    alerts: list[HomeAlert] = []
+
+    # 1. 依頼が届いている（未返答の依頼）
+    if "inbox" not in dismissed:
+        inbox_count = sum(
+            1
+            for t in tasks
+            if t.owner_member_id == member_id
+            and not t.archived
+            and t.assignment_status in ("依頼中", "相談中")
+            and t.requested_by != member_id
+        )
+        if inbox_count > 0:
+            alerts.append(
+                HomeAlert(
+                    alert_type="inbox",
+                    icon=":material/inbox:",
+                    title_key="home.alert_inbox_title",
+                    desc_key="home.alert_inbox_desc",
+                    target_page="app_pages/inbox.py",
+                    count=inbox_count,
+                )
+            )
+
+    # 2. 今日の体感負荷が未回答
+    if "checkin" not in dismissed:
+        has_today_checkin = any(
+            c.member_id == member_id and c.date == today for c in checkins
+        )
+        if not has_today_checkin:
+            alerts.append(
+                HomeAlert(
+                    alert_type="checkin",
+                    icon=":material/mood:",
+                    title_key="home.alert_checkin_title",
+                    desc_key="home.alert_checkin_desc",
+                    target_page="app_pages/checkin.py",
+                )
+            )
+
+    # 3. 期限を過ぎた NA がある
+    if "alerts" not in dismissed:
+        overdue_count = sum(
+            1
+            for t in tasks
+            if t.owner_member_id == member_id
+            and not t.archived
+            and t.status != "完了"
+            and t.na_due < today
+        )
+        if overdue_count > 0:
+            alerts.append(
+                HomeAlert(
+                    alert_type="alerts",
+                    icon=":material/alarm:",
+                    title_key="home.alert_overdue_title",
+                    desc_key="home.alert_overdue_desc",
+                    target_page="app_pages/my_tasks.py",
+                    count=overdue_count,
+                )
+            )
+
+    return alerts
 
 

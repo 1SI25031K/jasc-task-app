@@ -11,6 +11,8 @@ from core.i18n import t
 from core.services import calc_completion_rate, is_overdue_na
 from core.session import get_lang, get_repo, get_today
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 today = get_today()
@@ -23,7 +25,13 @@ snapshots = repo.list_daily_snapshots()
 role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 
-st.title(f":material/trending_up: {t('progress.title', lang)}")
+render_page_header(
+    title=t("progress.title", lang),
+    subtitle="",
+    lang=lang,
+    show_new_task=True,
+    key_suffix="progress",
+)
 
 # 期間選択（4週／12週／全期間）
 period_options = ["4w", "12w", "all"]
@@ -73,7 +81,7 @@ with col1:
             )
             c1 = (
                 alt.Chart(df_c1)
-                .mark_line(point=True, color="#2563eb")
+                .mark_line(point=True, color="#0B57D0")
                 .encode(
                     x=alt.X(
                         "date:N",
@@ -89,7 +97,7 @@ with col1:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c1, use_container_width=True)
+            st.altair_chart(c1)
 
 # ② 役職別の現在の完了率（棒グラフ）
 with col2:
@@ -111,7 +119,7 @@ with col2:
             df_c2 = pd.DataFrame(role_rate_rows)
             c2 = (
                 alt.Chart(df_c2)
-                .mark_bar(color="#10b981")
+                .mark_bar(color="#0B57D0")
                 .encode(
                     y=alt.Y("role:N", sort="-x", title=None),
                     x=alt.X(
@@ -123,7 +131,7 @@ with col2:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c2, use_container_width=True)
+            st.altair_chart(c2)
 
 col3, col4 = st.columns(2)
 
@@ -147,7 +155,7 @@ with col3:
             df_c3 = pd.DataFrame(overdue_rows)
             c3 = (
                 alt.Chart(df_c3)
-                .mark_bar(color="#ef4444")
+                .mark_bar(color="#B3261E")
                 .encode(
                     y=alt.Y("role:N", sort="-x", title=None),
                     x=alt.X("overdue:Q", title=None),
@@ -155,7 +163,7 @@ with col3:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c3, use_container_width=True)
+            st.altair_chart(c3)
 
 # ④ メンバー別の自動負荷の推移（折れ線グラフ）
 with col4:
@@ -196,4 +204,4 @@ with col4:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c4, use_container_width=True)
+            st.altair_chart(c4)

@@ -39,6 +39,8 @@ SHEET_HEADERS: dict[str, list[str]] = {
         "reminders_enabled",
         "is_admin",
         "active",
+        "bg_mode",
+        "bg_color",
     ],
     "roles": [
         "role_id",
@@ -217,12 +219,16 @@ def member_to_row(m: Member) -> list[str]:
         _format_bool(m.reminders_enabled),
         _format_bool(m.is_admin),
         _format_bool(m.active),
+        m.bg_mode,
+        m.bg_color,
     ]
 
 
 def row_to_member(d: dict[str, str]) -> Member:
-    """行辞書から Member を復元する。"""
+    """行辞書から Member を復元する。列が存在しない古いシートでも 'standard' に安全にフォールバックする。"""
     lang_val = d.get("lang", "ja").strip()
+    bg_mode_val = d.get("bg_mode", "standard").strip() or "standard"
+    bg_color_val = d.get("bg_color", "standard").strip() or "standard"
     return Member(
         member_id=d["member_id"].strip(),
         display_name=d.get("display_name", "").strip(),
@@ -234,6 +240,8 @@ def row_to_member(d: dict[str, str]) -> Member:
         reminders_enabled=_parse_bool(d.get("reminders_enabled"), True),
         is_admin=_parse_bool(d.get("is_admin"), False),
         active=_parse_bool(d.get("active"), True),
+        bg_mode=bg_mode_val if bg_mode_val in ("standard", "color", "bing") else "standard",
+        bg_color=bg_color_val,
     )
 
 
@@ -632,7 +640,33 @@ class SheetsRepository(Repository):
             if d.get("member_id", "").strip() == member_id:
                 member = row_to_member(d)
                 member.lang = "en" if lang == "en" else "ja"
-                self._update_row_raw("members", idx, member_to_row(member))
+                row_data = member_to_row(member)
+                if len(headers) < len(row_data):
+                    row_data = row_data[: len(headers)]
+                self._update_row_raw("members", idx, row_data)
+                return
+
+    def update_member_bg(
+        self, member_id: str, bg_mode: str, bg_color: str
+    ) -> None:
+        """メンバーの背景設定（bg_mode, bg_color）を RAW で更新し、キャッシュを破棄する。"""
+        ws = self._spreadsheet.worksheet("members")
+        all_values: list[list[str]] = ws.get_all_values()
+        if len(all_values) <= 1:
+            return
+        headers = [h.strip() for h in all_values[0]]
+        for idx, row in enumerate(all_values[1:], start=2):
+            d = _row_to_dict(headers, row)
+            if d.get("member_id", "").strip() == member_id:
+                member = row_to_member(d)
+                member.bg_mode = (
+                    bg_mode if bg_mode in ("standard", "color", "bing") else "standard"
+                )
+                member.bg_color = bg_color or "standard"
+                row_data = member_to_row(member)
+                if len(headers) < len(row_data):
+                    row_data = row_data[: len(headers)]
+                self._update_row_raw("members", idx, row_data)
                 return
 
     def list_roles(self, active_only: bool = False) -> list[Role]:

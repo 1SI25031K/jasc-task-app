@@ -15,6 +15,8 @@ from core.session import (
     render_task_card,
 )
 
+from core.ui.page_header import render_page_header
+
 repo = get_repo()
 lang = get_lang()
 today = get_today()
@@ -26,8 +28,13 @@ all_tasks = repo.list_tasks(include_archived=False)
 checkins = repo.list_checkins()
 settings = repo.get_settings()
 
-st.title(f":material/alarm: {t('alerts.title', lang)}")
-st.caption(t("alerts.subtitle", lang))
+render_page_header(
+    title=t("alerts.title", lang),
+    subtitle=t("alerts.subtitle", lang),
+    lang=lang,
+    show_new_task=True,
+    key_suffix="alerts",
+)
 
 overdue_tasks = sorted(
     (task for task in all_tasks if is_overdue_na(task, today)),
@@ -80,44 +87,48 @@ tabs = st.tabs(
 with tabs[0]:
     st.subheader(t("alerts.sec_overdue", lang))
     if not overdue_tasks:
-        st.success(t("alerts.empty_section", lang))
+        st.caption(t("alerts.empty_section", lang))
     else:
-        for task in overdue_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "alert_overdue"
-            )
+        with st.container(border=True):
+            for task in overdue_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "alert_overdue"
+                )
 
 with tabs[1]:
     st.subheader(t("alerts.sec_due_week", lang))
     if not due_week_tasks:
-        st.info(t("alerts.empty_section", lang))
+        st.caption(t("alerts.empty_section", lang))
     else:
-        for task in due_week_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "alert_week"
-            )
+        with st.container(border=True):
+            for task in due_week_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "alert_week"
+                )
 
 with tabs[2]:
     st.subheader(t("alerts.sec_stale", lang))
     if not stale_tasks:
-        st.info(t("alerts.empty_section", lang))
+        st.caption(t("alerts.empty_section", lang))
     else:
-        for task in stale_tasks:
-            days_ago = (now - task.updated_at).days
-            st.caption(
-                f"⏸️ {t('alerts.days_since_update', lang, days=days_ago)}"
-            )
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "alert_stale"
-            )
+        with st.container(border=True):
+            for task in stale_tasks:
+                days_ago = (now - task.updated_at).days
+                st.caption(
+                    t("alerts.days_since_update", lang, days=days_ago)
+                )
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "alert_stale"
+                )
 
 with tabs[3]:
     st.subheader(t("alerts.sec_pending_req", lang))
     if not pending_req_tasks:
-        st.info(t("alerts.empty_section", lang))
+        st.caption(t("alerts.empty_section", lang))
     else:
-        for task in pending_req_tasks:
-            render_task_card(
-                task, roles, members, checkins, all_tasks, "alert_req"
-            )
+        with st.container(border=True):
+            for task in pending_req_tasks:
+                render_task_card(
+                    task, roles, members, checkins, all_tasks, "alert_req"
+                )
 

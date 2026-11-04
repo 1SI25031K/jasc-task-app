@@ -122,7 +122,7 @@ def test_s1_unauthorized_email_stops_and_never_loads_tasks() -> None:
 
 
 def test_authenticated_member_binds_lang_and_identity() -> None:
-    """登録済みメンバー（例：member_f@example.com, lang='en'）でログインすると、本人の名前・初期言語（英語）が適用されることを確認する。"""
+    """登録済みメンバー（例：member_f@example.com, lang='en'）でログインすると、本人の名前・初期言語（英語）が適用され、ホームにあいさつが表示されることを確認する。"""
     app_path = Path(__file__).resolve().parent.parent / "app.py"
     at = AppTest.from_file(str(app_path))
     # メンバーF（m006, member_f@example.com）は初期データで lang="en"
@@ -132,6 +132,5 @@ def test_authenticated_member_binds_lang_and_identity() -> None:
     assert not at.exception
     assert at.session_state["current_member_id"] == "m006"
     assert at.session_state["lang"] == "en"
-    assert len(at.title) == 1
-    assert "Role Board" in at.title[0].value
-    assert any("Member F" in c.value for c in at.sidebar.caption)
+    assert any("Member F" in h.value for h in at.html)
+    assert any("Member F" in m.value for m in at.markdown)

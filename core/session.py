@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta
 import streamlit as st
 
+from core.auth import require_authenticated_member
 from core.i18n import (
     format_date,
     format_datetime,
@@ -32,6 +34,7 @@ from core.repository import (
     Repository,
     build_dummy_daily_snapshots,
 )
+from core.sheets_repository import SheetsRepository
 from core.services import (
     apply_full_task_update,
     apply_quick_na_update,
@@ -57,43 +60,50 @@ def get_today() -> date:
     return get_now().date()
 
 
-def init_session_state() -> None:
-    """st.session_state にリポジトリ・現在のメンバー・表示言語を初期化する。"""
-    if "repo" not in st.session_state:
-        today = get_today()
-        repo_inst = InMemoryRepository.create_with_dummy_data(today=today)
-        repo_inst.save_daily_snapshots(
-            build_dummy_daily_snapshots(
-                today=today,
-                members=repo_inst.list_members(),
-                roles=repo_inst.list_roles(),
+def create_repository_from_config(
+    secrets_dict: dict | None = None, today: date | None = None
+) -> Repository:
+    """secrets.toml（または引数辞書）の repository_backend 設定に応じて InMemory または SheetsRepository を返す。"""
+    base_date = today or get_today()
+    cfg = secrets_dict
+    if cfg is None:
+        try:
+            cfg = dict(st.secrets)
+        except Exception:
+            cfg = {}
+
+    backend = str(cfg.get("repository_backend", "memory")).strip().lower()
+    if backend == "sheets":
+        spreadsheet_id = str(cfg.get("spreadsheet_id", "")).strip()
+        sa_info = cfg.get("gcp_service_account")
+        if not spreadsheet_id or not isinstance(sa_info, Mapping):
+            raise ValueError(
+                "repository_backend='sheets' を使うには、secrets.toml の最上部（[gcp_service_account] より上の行）に spreadsheet_id を書き、続けて [gcp_service_account] セクションを設定してください。"
             )
+        return SheetsRepository.from_service_account_info(
+            service_account_info=dict(sa_info),
+            spreadsheet_id=spreadsheet_id,
         )
-        st.session_state["repo"] = repo_inst
+
+    repo_inst = InMemoryRepository.create_with_dummy_data(today=base_date)
+    repo_inst.save_daily_snapshots(
+        build_dummy_daily_snapshots(
+            today=base_date,
+            members=repo_inst.list_members(),
+            roles=repo_inst.list_roles(),
+        )
+    )
+    return repo_inst
+
+
+def init_session_state() -> None:
+    """st.session_state にリポジトリ・通知・NA抽出器を初期化する（認証前に業務データは読み込まない：S1）。"""
+    if "repo" not in st.session_state:
+        st.session_state["repo"] = create_repository_from_config()
     if "notifier" not in st.session_state:
         st.session_state["notifier"] = DummyNotifier()
     if "na_extractor" not in st.session_state:
         st.session_state["na_extractor"] = DummyNaExtractor()
-    if "current_member_id" not in st.session_state:
-        # フェーズ2では仮に「メンバーA（m001）」としてログインしている扱いにする
-        st.session_state["current_member_id"] = "m001"
-    if "lang" not in st.session_state:
-        repo: Repository = st.session_state["repo"]
-        members = repo.list_members()
-        m1 = next(
-            (
-                m
-                for m in members
-                if m.member_id == st.session_state["current_member_id"]
-            ),
-            None,
-        )
-        initial_lang = m1.lang if m1 else "ja"
-        qp_lang = st.query_params.get("lang")
-        if qp_lang in ("ja", "en"):
-            initial_lang = qp_lang
-        st.session_state["lang"] = initial_lang
-        st.session_state["lang_choice"] = initial_lang
 
 
 def get_repo() -> Repository:
@@ -110,14 +120,10 @@ def get_lang() -> LangCode:
 
 
 def get_current_member() -> Member:
-    """現在ログイン中（操作中）の Member を取得する。"""
+    """現在ログイン中の認証済み Member を取得する（未認証・権限なしの場合は S1 ゲートにより停止する）。"""
     repo = get_repo()
-    members = repo.list_members()
-    current_id = st.session_state.get("current_member_id", "m001")
-    for m in members:
-        if m.member_id == current_id:
-            return m
-    return members[0]
+    lang = get_lang()
+    return require_authenticated_member(repo, lang=lang)
 
 
 def format_status_badge(task: Task, today: date, lang: LangCode) -> str:

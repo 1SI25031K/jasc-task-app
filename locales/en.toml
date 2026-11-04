@@ -4,6 +4,16 @@ logged_in_as = "Signed in as: {name}"
 switch_user_label = "Switch Active Member (Dev Preview)"
 lang_label = "表示言語 / Language"
 new_task_btn = "➕ Create New Task"
+logout_btn = "Sign out"
+
+[auth]
+login_title = "JASC79 Task & NA Tracker - Sign In"
+login_description = "Please sign in with the Google account registered in the committee roster. / 実行委員メンバー名簿に登録された Google アカウントでログインしてください。"
+login_btn = "🔑 Sign in with Google / Google アカウントでログイン"
+unauthorized_title = "Access Denied / アクセス権がありません"
+unauthorized_message = "This account ({email}) does not have access. Please sign in with an email address registered in the member roster.\nこのアカウント（{email}）にはアクセス権がありません。メンバー名簿に登録されたメールアドレスでログインしてください。"
+logout_btn = "Sign out / ログアウト"
+auth_not_configured = "⚠️ `[auth]` (Google OAuth settings) is not yet configured in `.streamlit/secrets.toml`. Please set `client_id`, `client_secret`, and `cookie_secret`."
 
 [nav]
 board = "Role Board"

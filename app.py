@@ -1,13 +1,13 @@
-"""JASC79 タスク・NA管理アプリのエントリポイント（ナビゲーション・言語切替）。"""
+"""JASC79 タスク・NA管理アプリのエントリポイント（認証ゲート・ナビゲーション・言語切替）。"""
 
 from __future__ import annotations
 
 import streamlit as st
 
+from core.auth import require_authenticated_member
 from core.i18n import t
 from core.models import LangCode
 from core.session import (
-    get_current_member,
     get_lang,
     get_repo,
     init_session_state,
@@ -16,7 +16,7 @@ from core.session import (
 
 
 def main() -> None:
-    """アプリのナビゲーションとサイドバー（言語切替・操作メンバー表示）を構成して実行する。"""
+    """S1 認証チェックを最優先で実行し、承認されたメンバーのみにナビゲーションと各画面を表示する。"""
     st.set_page_config(
         page_title="JASC79 タスク・NA管理",
         page_icon="📋",
@@ -24,18 +24,19 @@ def main() -> None:
     )
     init_session_state()
     repo = get_repo()
+
+    # S1：どの業務データ読み込みよりも前に必ず認証・メンバー名簿照合を実行する
+    current_member = require_authenticated_member(repo, lang=get_lang())
     lang = get_lang()
-    current_member = get_current_member()
-    members = repo.list_members(active_only=True)
-    member_map = {m.member_id: m for m in members}
 
     with st.sidebar:
         st.markdown(f"### 📋 {t('app.title', lang)}")
         st.caption(
             f"👤 {t('app.logged_in_as', lang, name=current_member.get_name(lang))}"
         )
+        st.caption(f"✉️ {current_member.email}")
 
-        # F11：日本語 / English 切替
+        # F11：日本語 / English 切替（ログイン本人の members.lang にも保存）
         lang_options: list[LangCode] = ["ja", "en"]
         lang_labels = {"ja": "日本語", "en": "English"}
         selected_lang = st.radio(
@@ -51,25 +52,6 @@ def main() -> None:
             repo.update_member_lang(current_member.member_id, selected_lang)
         lang = selected_lang
 
-        # 開発確認用：操作中メンバーの切替（初期値はメンバーA m001）
-        with st.expander(t("app.switch_user_label", lang)):
-            member_ids = [m.member_id for m in members]
-            curr_m_idx = (
-                member_ids.index(current_member.member_id)
-                if current_member.member_id in member_ids
-                else 0
-            )
-            chosen_mid = st.selectbox(
-                t("common.owner", lang),
-                options=member_ids,
-                index=curr_m_idx,
-                format_func=lambda mid: member_map[mid].get_name(lang),
-                key="sidebar_member_select",
-            )
-            if chosen_mid != current_member.member_id:
-                st.session_state["current_member_id"] = chosen_mid
-                st.rerun()
-
         if st.button(
             t("app.new_task_btn", lang),
             type="primary",
@@ -77,6 +59,14 @@ def main() -> None:
             key="sidebar_new_task_btn",
         ):
             open_create_task_dialog()
+
+        st.divider()
+        if st.button(
+            f"🚪 {t('app.logout_btn', lang)}",
+            use_container_width=True,
+            key="sidebar_logout_btn",
+        ):
+            st.logout()
 
     pages = [
         st.Page("pages/board.py", title=t("nav.board", lang), icon="🏠", default=True),

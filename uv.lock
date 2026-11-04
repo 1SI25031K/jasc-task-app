@@ -585,7 +585,6 @@ dependencies = [
     { name = "gspread" },
     { name = "httpx" },
     { name = "itsdangerous" },
-    { name = "pytest" },
     { name = "slack-sdk" },
     { name = "streamlit" },
 ]
@@ -593,6 +592,7 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pip-audit" },
+    { name = "pytest" },
 ]
 
 [package.metadata]
@@ -602,13 +602,15 @@ requires-dist = [
     { name = "gspread", specifier = ">=6.2.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
-    { name = "pytest", specifier = ">=9.2.0" },
     { name = "slack-sdk", specifier = ">=3.46.0" },
     { name = "streamlit", specifier = ">=1.66.1" },
 ]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pip-audit", specifier = ">=2.10.1" }]
+dev = [
+    { name = "pip-audit", specifier = ">=2.10.1" },
+    { name = "pytest", specifier = ">=9.2.0" },
+]
 
 [[package]]
 name = "jinja2"

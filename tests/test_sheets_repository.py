@@ -23,7 +23,11 @@ from core.sheets_repository import (
     SheetsRepository,
     clear_sheets_cache,
 )
-from scripts.init_sheet import initialize_spreadsheet_with_dummy_data
+from scripts.init_sheet import (
+    ensure_spreadsheet_is_empty,
+    initialize_spreadsheet,
+    initialize_spreadsheet_with_dummy_data,
+)
 
 
 class FakeWorksheet:
@@ -111,6 +115,10 @@ class FakeSpreadsheet:
         ws = FakeWorksheet(title)
         self._sheets[title] = ws
         return ws
+
+    def del_worksheet(self, ws: FakeWorksheet) -> None:
+        if ws.title in self._sheets:
+            del self._sheets[ws.title]
 
 
 def test_init_sheet_and_sheets_repository_crud_and_raw_option() -> None:
@@ -232,4 +240,49 @@ def test_create_repository_from_config_switching() -> None:
     # sheets 指定時に必須キーがない場合は分かりやすい ValueError を出す
     with pytest.raises(ValueError):
         create_repository_from_config({"repository_backend": "sheets"})
+
+
+def test_init_sheet_no_dummy_mode() -> None:
+    """--no-dummy モード（本番用）でヘッダー・役職マスタ・設定値のみが投入され、ダミーデータが入らないことを確認する。"""
+    fake_ss = FakeSpreadsheet("prod_ss_id")
+
+    # 初期状態は空（Sheet1のみ）
+    ensure_spreadsheet_is_empty(fake_ss)
+
+    initialize_spreadsheet(fake_ss, no_dummy=True)
+
+    # 全10シートが作成され、初期 Sheet1 は削除されていること
+    sheet_titles = {ws.title for ws in fake_ss.worksheets()}
+    assert sheet_titles == set(SHEET_HEADERS.keys())
+    assert "Sheet1" not in sheet_titles
+
+    repo = SheetsRepository(fake_ss)
+
+    # roles（21役職）と settings（既定値）のみ入り、他は空
+    assert len(repo.list_roles()) == 21
+    assert repo.get_settings().load_window_days == 14
+    assert len(repo.list_members()) == 0
+    assert len(repo.list_tasks()) == 0
+    assert len(repo.list_checkins()) == 0
+    assert len(repo.list_role_assignments()) == 0
+    assert len(repo.list_activity_logs()) == 0
+    assert len(repo.list_meetings()) == 0
+    assert len(repo.list_daily_snapshots()) == 0
+    assert len(repo.list_reminder_logs()) == 0
+
+
+def test_ensure_spreadsheet_is_empty_guards() -> None:
+    """すでにデータや管理シートが存在する場合に安全に例外を送出して中止することを確認する。"""
+    # 1. 管理シート（tasks など）が既に存在する場合
+    dirty_ss1 = FakeSpreadsheet("dirty_1")
+    dirty_ss1.add_worksheet("tasks")
+    with pytest.raises(ValueError, match="安全保護.*tasks"):
+        ensure_spreadsheet_is_empty(dirty_ss1)
+
+    # 2. シート内に値が入っている場合
+    dirty_ss2 = FakeSpreadsheet("dirty_2")
+    dirty_ss2.worksheet("Sheet1").rows.append(["some_user_data"])
+    with pytest.raises(ValueError, match="安全保護.*Sheet1.*既にデータ"):
+        ensure_spreadsheet_is_empty(dirty_ss2)
+
 

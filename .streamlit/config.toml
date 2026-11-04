@@ -26,9 +26,11 @@ blueColor = "#0B57D0"                  # M3 Primary (In Progress)
 violetColor = "#6B4FBB"                # M3 Tertiary (Pending request)
 grayColor = "#444746"                  # M3 Neutral Variant (Caption / Secondary)
 
-# タイポグラフィ（Google Sans Flex + Noto Sans JP）
-font = "'Google Sans Flex', 'Noto Sans JP', sans-serif:https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
-headingFont = "'Google Sans Flex', 'Noto Sans JP', sans-serif:https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..600&family=Noto+Sans+JP:wght@400;500;600&display=swap"
+# タイポグラフィ（本文: Noto Sans JP / 見出し: Google Sans Flex / 等幅: Roboto Mono）
+# ※Streamlit 1.66 の仕様上、各 font プロパティの URL には 1 family のみ指定可能
+font = "Noto Sans JP:https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+headingFont = "Google Sans Flex:https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&display=swap"
+codeFont = "Roboto Mono:https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500&display=swap"
 baseFontSize = 14
 baseFontWeight = 400
 headingFontSizes = ["32px", "24px", "20px", "16px", "14px", "12px"]

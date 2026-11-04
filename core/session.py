@@ -28,7 +28,7 @@ from core.models import (
     TaskWeight,
 )
 from core.na_extractor import DummyNaExtractor
-from core.notifier import DummyNotifier
+from core.notifier import DummyNotifier, Notifier, SlackNotifier
 from core.repository import (
     InMemoryRepository,
     Repository,
@@ -96,12 +96,32 @@ def create_repository_from_config(
     return repo_inst
 
 
+def create_notifier_from_config(secrets_dict: Mapping | None = None) -> Notifier:
+    """secrets.toml に slack_bot_token（または [slack] bot_token）があれば SlackNotifier を、なければ DummyNotifier を返す。"""
+    cfg = secrets_dict
+    if cfg is None:
+        try:
+            cfg = dict(st.secrets)
+        except Exception:
+            cfg = {}
+
+    token = str(cfg.get("slack_bot_token", "")).strip()
+    if not token:
+        slack_sec = cfg.get("slack")
+        if isinstance(slack_sec, Mapping):
+            token = str(slack_sec.get("bot_token", "")).strip()
+
+    if token and not token.startswith("xoxb-your-"):
+        return SlackNotifier(bot_token=token)
+    return DummyNotifier()
+
+
 def init_session_state() -> None:
     """st.session_state にリポジトリ・通知・NA抽出器を初期化する（認証前に業務データは読み込まない：S1）。"""
     if "repo" not in st.session_state:
         st.session_state["repo"] = create_repository_from_config()
     if "notifier" not in st.session_state:
-        st.session_state["notifier"] = DummyNotifier()
+        st.session_state["notifier"] = create_notifier_from_config()
     if "na_extractor" not in st.session_state:
         st.session_state["na_extractor"] = DummyNaExtractor()
 

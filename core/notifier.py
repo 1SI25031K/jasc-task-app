@@ -5,7 +5,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date, timedelta
-from typing import Iterable
+from typing import Any, Callable, Iterable
+
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
 from core.models import LangCode, Member, Role, Task
 from core.reminders import MemberDailyDigest, ReminderItem
@@ -218,6 +221,53 @@ def format_personal_dm(
                 f"\n*■ Quick Workload Check-in*\nHow is your current capacity (1–10)? You can answer with just one tap.\n👉 Check-in Page: {checkin_url}"
             )
 
+        if "request_new" in by_kind:
+            lines.append(
+                f"\n*■ New Task Requests for You*\n👉 Request Inbox: {inbox_url}"
+            )
+            for item in by_kind["request_new"]:
+                req_from = (
+                    escape_slack_text(item.target_member.get_name("en"))
+                    if item.target_member
+                    else "a team member"
+                )
+                lines.append(
+                    f"• You have a request from {req_from}: {_fmt_task(item.task)}"
+                )
+
+        if "request_accepted" in by_kind:
+            lines.append(
+                f"\n*■ Updates on Tasks You Requested (Accepted)*\n👉 My Tasks: {my_tasks_url}"
+            )
+            for item in by_kind["request_accepted"]:
+                owner_name = (
+                    escape_slack_text(item.target_member.get_name("en"))
+                    if item.target_member
+                    else "the owner"
+                )
+                lines.append(
+                    f"• {owner_name} accepted your request: {_fmt_task(item.task)}"
+                )
+
+        if "request_consulted" in by_kind:
+            lines.append(
+                f"\n*■ Updates on Tasks You Requested (Discussion Requested)*\n👉 Request Inbox: {inbox_url}"
+            )
+            for item in by_kind["request_consulted"]:
+                owner_name = (
+                    escape_slack_text(item.target_member.get_name("en"))
+                    if item.target_member
+                    else "the owner"
+                )
+                cmt = (
+                    escape_slack_text(item.task.assignment_comment)
+                    if item.task and item.task.assignment_comment
+                    else ""
+                )
+                lines.append(
+                    f"• {owner_name} would like to discuss: {_fmt_task(item.task)} — Comment: \"{cmt}\""
+                )
+
         if "request_pending" in by_kind:
             lines.append(
                 f"\n*■ Task Requests Waiting for Your Response*\nPlease review and choose 'Accept' or 'Discuss' when you have a moment:\n👉 Request Inbox: {inbox_url}"
@@ -302,6 +352,53 @@ def format_personal_dm(
             lines.append(
                 f"\n*■ 体感負荷チェックインのご案内*\n現在の余裕度（1〜10）をボタン1つで回答できます。分担を話し合う材料としてご協力をお願いします。\n👉 体感負荷チェックイン：{checkin_url}"
             )
+
+        if "request_new" in by_kind:
+            lines.append(
+                f"\n*■ 新しい依頼が届いています*\n👉 依頼の受信箱：{inbox_url}"
+            )
+            for item in by_kind["request_new"]:
+                req_from = (
+                    escape_slack_text(item.target_member.get_name("ja"))
+                    if item.target_member
+                    else "メンバー"
+                )
+                lines.append(
+                    f"・{req_from}さんから依頼が届いています：{_fmt_task(item.task)}"
+                )
+
+        if "request_accepted" in by_kind:
+            lines.append(
+                f"\n*■ 依頼したタスクが承諾されました*\n👉 マイタスク：{my_tasks_url}"
+            )
+            for item in by_kind["request_accepted"]:
+                owner_name = (
+                    escape_slack_text(item.target_member.get_name("ja"))
+                    if item.target_member
+                    else "担当者"
+                )
+                lines.append(
+                    f"・{owner_name}さんが依頼を承諾しました：{_fmt_task(item.task)}"
+                )
+
+        if "request_consulted" in by_kind:
+            lines.append(
+                f"\n*■ 依頼したタスクについて相談コメントが届いています*\n👉 依頼の受信箱：{inbox_url}"
+            )
+            for item in by_kind["request_consulted"]:
+                owner_name = (
+                    escape_slack_text(item.target_member.get_name("ja"))
+                    if item.target_member
+                    else "担当者"
+                )
+                cmt = (
+                    escape_slack_text(item.task.assignment_comment)
+                    if item.task and item.task.assignment_comment
+                    else ""
+                )
+                lines.append(
+                    f"・{owner_name}さんから相談コメント：「{cmt}」 — {_fmt_task(item.task)}"
+                )
 
         if "request_pending" in by_kind:
             lines.append(
@@ -550,4 +647,62 @@ class DummyNotifier(Notifier):
         self.sent_dms.append(
             SentMessage(target_id=slack_user_id, text=text)
         )
+
+
+def _execute_with_single_retry(operation: Callable[[], Any]) -> Any:
+    """指定された送信関数を実行し、例外が発生した場合は1回だけ再試行する（フェーズ5要件3）。"""
+    try:
+        return operation()
+    except Exception:
+        return operation()
+
+
+class SlackNotifier(Notifier):
+    """slack_sdk の WebClient を使ってチャンネル投稿・個人 DM を送信する実装（3. 技術構成・S14）。
+
+    - 最小限の権限（`chat:write`, `im:write`）で動作する。
+    - 送信失敗時は1回だけ再試行し、2回目も失敗した場合は例外を送出する。
+    """
+
+    def __init__(
+        self, bot_token: str = "", client: WebClient | Any | None = None
+    ) -> None:
+        """Bot トークンまたは既存の WebClient インスタンスから初期化する。"""
+        if client is not None:
+            self._client = client
+        else:
+            token = bot_token.strip()
+            if not token:
+                raise ValueError("Slack Bot トークンが空です。")
+            self._client = WebClient(token=token)
+
+    def send_channel_message(self, channel_id: str, text: str) -> None:
+        """指定チャンネル（channel_id）にメッセージを投稿する。失敗時は1回再試行する。"""
+        cid = channel_id.strip()
+        if not cid:
+            raise ValueError("channel_id が空です。")
+
+        def _post() -> None:
+            self._client.chat_postMessage(channel=cid, text=text)
+
+        _execute_with_single_retry(_post)
+
+    def send_dm(self, slack_user_id: str, text: str) -> None:
+        """conversations_open で 1対1 DM チャンネルを開き、メッセージを送信する。失敗時は1回再試行する。"""
+        uid = slack_user_id.strip()
+        if not uid:
+            raise ValueError("slack_user_id が空です。")
+
+        def _open_and_post() -> None:
+            open_resp = self._client.conversations_open(users=[uid])
+            channel_obj = open_resp.get("channel") if isinstance(open_resp, dict) or hasattr(open_resp, "get") else None
+            dm_channel_id = (
+                channel_obj.get("id")
+                if channel_obj and hasattr(channel_obj, "get")
+                else uid
+            )
+            self._client.chat_postMessage(channel=dm_channel_id, text=text)
+
+        _execute_with_single_retry(_open_and_post)
+
 

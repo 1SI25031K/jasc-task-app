@@ -1,0 +1,47 @@
+name: Daily Task & NA Job
+
+on:
+  schedule:
+    # 日本時間（JST = UTC+9）の毎朝 08:00 に実行するため、UTC では前日の 23:00（0 23 * * *）を指定する
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (true = print messages without sending)'
+        required: false
+        default: 'false'
+        type: choice
+        options:
+          - 'false'
+          - 'true'
+
+jobs:
+  daily-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Run daily_job.py
+        env:
+          GCP_SERVICE_ACCOUNT_JSON: ${{ secrets.GCP_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            uv run python scripts/daily_job.py --dry-run
+          else
+            uv run python scripts/daily_job.py
+          fi
+

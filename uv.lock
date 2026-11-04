@@ -480,6 +480,7 @@ dependencies = [
     { name = "httpx" },
     { name = "itsdangerous" },
     { name = "pytest" },
+    { name = "slack-sdk" },
     { name = "streamlit" },
 ]
 
@@ -490,6 +491,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "itsdangerous", specifier = ">=2.2.0" },
     { name = "pytest", specifier = ">=9.2.0" },
+    { name = "slack-sdk", specifier = ">=3.46.0" },
     { name = "streamlit", specifier = ">=1.66.1" },
 ]
 
@@ -1206,6 +1208,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ba/a5/9672e532fe02cd3b92c78cfd8743abca939d96853006c63835009a1ecb6f/rpds_py-2026.9.1-pp312-pypy312_pp73-musllinux_1_2_x86_64.whl", hash = "sha256:6b9bf3135b4ad5981df9a73d71a35272d650a2985ae9c2746357b24d59de2448", size = 591126, upload-time = "2026-10-04T16:32:29.274Z" },
     { url = "https://files.pythonhosted.org/packages/80/ef/3a9f8e4279c7920af561deed4cb7ebebed2794a8f608cf404d5eef14a105/rpds_py-2026.9.1-pp312-pypy312_pp80-macosx_10_12_x86_64.whl", hash = "sha256:56c6952a9b15047466d0c2347c446a761d4527f89976156341e68f0ce5cc08b0", size = 357108, upload-time = "2026-10-04T16:32:31.641Z" },
     { url = "https://files.pythonhosted.org/packages/b7/55/4b2fa381a583760aea5c92841e4e928a358e1c6511b129219e9c2826a226/rpds_py-2026.9.1-pp312-pypy312_pp80-macosx_11_0_arm64.whl", hash = "sha256:b242c27c8f836305a4a72df9cdd564386ac57b807bd252a063223331c9316b37", size = 346877, upload-time = "2026-10-04T16:32:34.061Z" },
+]
+
+[[package]]
+name = "slack-sdk"
+version = "3.46.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/43/9eb4f5172ec64d8c25f9fa397d3ca283782d356a60809e4b68ade81fde1a/slack_sdk-3.46.0.tar.gz", hash = "sha256:25215ca293d2954ed759b87573b4c833cb3f82ebff371355936515c688411dbb", size = 266040, upload-time = "2026-10-30T05:08:27.384Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a3/5c/0be529c9a48ccd7b452c6ca47ad1ab5e5e2f7f2cf53d8f34970aebffd0e8/slack_sdk-3.46.0-py2.py3-none-any.whl", hash = "sha256:6286d89da97ea193c853609131515e6f1b3edf86866d6e5aad0dba9dcf1cb72d", size = 325190, upload-time = "2026-10-30T05:08:25.985Z" },
 ]
 
 [[package]]

@@ -7,6 +7,7 @@ import streamlit as st
 
 import core.auth as auth_module
 import core.session as session_module
+from core.notifier import DummyNotifier
 from core.repository import InMemoryRepository, build_dummy_daily_snapshots
 
 
@@ -31,6 +32,11 @@ def _isolate_test_environment(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr(
         session_module, "create_repository_from_config", _test_create_repo
+    )
+    monkeypatch.setattr(
+        session_module,
+        "create_notifier_from_config",
+        lambda secrets_dict=None: DummyNotifier(),
     )
 
     def _default_test_auth_state() -> tuple[bool, str | None]:

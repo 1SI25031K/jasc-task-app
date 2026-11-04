@@ -8,6 +8,7 @@ from typing import Iterable
 
 from core.load import check_high_load_alert
 from core.models import (
+    ActivityLog,
     Checkin,
     Member,
     ReminderKind,
@@ -85,6 +86,7 @@ def build_daily_reminder_plan(
     role_assignments: Iterable[RoleAssignment],
     reminder_logs: Iterable[ReminderLog],
     settings: AppSettings | None = None,
+    activity_logs: Iterable[ActivityLog] | None = None,
 ) -> DailyReminderPlan:
     """5.6 のルールに従い、その日に送信する個人 DM リマインドを抽出して1人1通にまとめる。
 
@@ -253,6 +255,52 @@ def build_daily_reminder_plan(
                         target_member=member_map.get(task.requested_by),
                     )
                 )
+            elif (now - task.updated_at) <= timedelta(hours=24) and task.requested_by:
+                # ⑦-b 新しい依頼（前回の定時処理以降＝直近24時間以内に発生した依頼中タスク）
+                sent_new_req = any(
+                    log.member_id == owner_id
+                    and log.kind == "request_new"
+                    and log.task_id == task.task_id
+                    for log in log_list
+                )
+                if not sent_new_req:
+                    add_candidate(
+                        ReminderItem(
+                            member_id=owner_id,
+                            kind="request_new",
+                            task_id=task.task_id,
+                            task=task,
+                            target_member=member_map.get(task.requested_by),
+                        )
+                    )
+
+        # ⑦-c 依頼への返事（承諾・相談：直近24時間以内に発生した場合、依頼した人に知らせる）
+        if activity_logs is not None and task.requested_by:
+            for alog in activity_logs:
+                if alog.task_id != task.task_id:
+                    continue
+                if (now - alog.timestamp) > timedelta(hours=24):
+                    continue
+                if alog.action == "accept" and task.assignment_status == "承諾済":
+                    add_candidate(
+                        ReminderItem(
+                            member_id=task.requested_by,
+                            kind="request_accepted",
+                            task_id=task.task_id,
+                            task=task,
+                            target_member=member_map.get(owner_id),
+                        )
+                    )
+                elif alog.action == "consult" and task.assignment_status == "相談中":
+                    add_candidate(
+                        ReminderItem(
+                            member_id=task.requested_by,
+                            kind="request_consulted",
+                            task_id=task.task_id,
+                            task=task,
+                            target_member=member_map.get(owner_id),
+                        )
+                    )
 
     # ------------------------------------------------------------------
     # 8. 体感負荷の入力（checkin_weekdays の曜日で、その日まだ回答していない全員）

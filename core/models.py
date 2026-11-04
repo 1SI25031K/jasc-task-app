@@ -37,8 +37,13 @@ ReminderKind = Literal[
     "waiting",
     "stale",
     "request_pending",
+    "request_new",
+    "request_accepted",
+    "request_consulted",
     "checkin",
     "high_load_alert",
+    "morning_summary",
+    "weekly_summary",
 ]
 
 

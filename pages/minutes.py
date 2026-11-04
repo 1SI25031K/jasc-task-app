@@ -12,6 +12,8 @@ from core.na_extractor import (
     MinutesTooLongError,
     NaCandidate,
     NaExtractor,
+    RateLimitExceededError,
+    check_and_record_rate_limit,
     is_candidate_ready_to_save,
 )
 from core.services import build_member_load_label, create_new_task
@@ -83,6 +85,11 @@ if st.button(
     key="minutes_extract_btn",
 ):
     try:
+        # S13：1ユーザーあたり1分に3回までのレート制限（連打防止）
+        call_history = list(st.session_state.get("na_extract_timestamps", []))
+        updated_history = check_and_record_rate_limit(call_history, now=now)
+        st.session_state["na_extract_timestamps"] = updated_history
+
         candidates = extractor.extract(
             raw_minutes=minutes_text,
             meeting_date=meeting_date,
@@ -90,6 +97,8 @@ if st.button(
             members=members,
         )
         st.session_state["extracted_na_candidates"] = candidates
+    except RateLimitExceededError:
+        st.error(t("minutes.rate_limit_error", lang))
     except MinutesTooLongError as e:
         st.error(str(e))
     except Exception:

@@ -7,6 +7,7 @@ import streamlit as st
 
 import core.auth as auth_module
 import core.session as session_module
+from core.na_extractor import DummyNaExtractor
 from core.notifier import DummyNotifier
 from core.repository import InMemoryRepository, build_dummy_daily_snapshots
 
@@ -37,6 +38,11 @@ def _isolate_test_environment(monkeypatch: pytest.MonkeyPatch) -> None:
         session_module,
         "create_notifier_from_config",
         lambda secrets_dict=None: DummyNotifier(),
+    )
+    monkeypatch.setattr(
+        session_module,
+        "create_na_extractor_from_config",
+        lambda secrets_dict=None: DummyNaExtractor(),
     )
 
     def _default_test_auth_state() -> tuple[bool, str | None]:

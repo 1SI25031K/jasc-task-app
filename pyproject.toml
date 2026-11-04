@@ -5,10 +5,16 @@ description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
     "authlib>=1.9.3",
+    "google-genai>=2.34.0",
     "gspread>=6.2.1",
     "httpx>=0.28.1",
     "itsdangerous>=2.2.0",
     "pytest>=9.2.0",
     "slack-sdk>=3.46.0",
     "streamlit>=1.66.1",
+]
+
+[tool.pytest.ini_options]
+markers = [
+    "live_gemini: 実際の Gemini API を呼び出す統合テスト（RUN_LIVE_GEMINI_TESTS=1 のときのみ実行）",
 ]

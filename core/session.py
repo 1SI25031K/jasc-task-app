@@ -27,7 +27,11 @@ from core.models import (
     TaskStatus,
     TaskWeight,
 )
-from core.na_extractor import DummyNaExtractor
+from core.na_extractor import (
+    DummyNaExtractor,
+    GeminiNaExtractor,
+    NaExtractor,
+)
 from core.notifier import DummyNotifier, Notifier, SlackNotifier
 from core.repository import (
     InMemoryRepository,
@@ -116,6 +120,47 @@ def create_notifier_from_config(secrets_dict: Mapping | None = None) -> Notifier
     return DummyNotifier()
 
 
+def create_na_extractor_from_config(
+    secrets_dict: Mapping | None = None,
+) -> NaExtractor:
+    """secrets.toml の na_extractor_backend / gemini_api_key / gemini_model に応じて GeminiNaExtractor または DummyNaExtractor を返す。"""
+    cfg = secrets_dict
+    if cfg is None:
+        try:
+            cfg = dict(st.secrets)
+        except Exception:
+            cfg = {}
+
+    backend = str(cfg.get("na_extractor_backend", "")).strip().lower()
+    api_key = str(cfg.get("gemini_api_key", "")).strip()
+    model_name = str(cfg.get("gemini_model", "")).strip()
+
+    gemini_sec = cfg.get("gemini")
+    if isinstance(gemini_sec, Mapping):
+        if not api_key:
+            api_key = str(gemini_sec.get("api_key", "")).strip()
+        if not model_name:
+            model_name = str(gemini_sec.get("model", "")).strip()
+
+    if backend == "dummy":
+        return DummyNaExtractor()
+
+    if backend == "gemini" or (
+        api_key and not api_key.startswith("AIzaSy-your-")
+    ):
+        if not api_key or api_key.startswith("AIzaSy-your-"):
+            raise ValueError(
+                "na_extractor_backend='gemini' を使うには、secrets.toml に gemini_api_key を設定してください。"
+            )
+        if not model_name:
+            raise ValueError(
+                "Gemini を使うには、secrets.toml に gemini_model（例：'gemini-2.5-flash'）を設定してください。"
+            )
+        return GeminiNaExtractor(api_key=api_key, model_name=model_name)
+
+    return DummyNaExtractor()
+
+
 def init_session_state() -> None:
     """st.session_state にリポジトリ・通知・NA抽出器を初期化する（認証前に業務データは読み込まない：S1）。"""
     if "repo" not in st.session_state:
@@ -123,7 +168,7 @@ def init_session_state() -> None:
     if "notifier" not in st.session_state:
         st.session_state["notifier"] = create_notifier_from_config()
     if "na_extractor" not in st.session_state:
-        st.session_state["na_extractor"] = DummyNaExtractor()
+        st.session_state["na_extractor"] = create_na_extractor_from_config()
 
 
 def get_repo() -> Repository:

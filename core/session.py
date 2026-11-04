@@ -236,7 +236,7 @@ def format_subjective_score_badge(
     return f":red-badge[🔴 {score} / 10]"
 
 
-@st.dialog("Task Form", width="large")
+@st.dialog("➕ タスク作成 / Create Task", width="large")
 def open_create_task_dialog(default_role_id: str = "") -> None:
     """F7 新規タスク作成ダイアログを表示する。"""
     repo = get_repo()
@@ -380,27 +380,30 @@ def open_create_task_dialog(default_role_id: str = "") -> None:
         if not title.strip() or not selected_roles or not next_action.strip():
             st.error(t("task_form.validation_error_required", lang))
             return
-        new_task, logs = create_new_task(
-            title=title,
-            role_ids=selected_roles,
-            owner_member_id=selected_owner,
-            creator_member_id=current_member.member_id,
-            weight=weight,
-            next_action=next_action,
-            na_due=na_due,
-            task_due=task_due,
-            status=status,
-            waiting_on_member_id=waiting_on_id,
-            priority=priority,
-            blocker=blocker,
-            notes=notes,
-            now=now,
-        )
-        repo.add_task(new_task)
-        for log in logs:
-            repo.add_activity_log(log)
-        st.toast(t("common.saved_toast", lang))
-        st.rerun()
+        try:
+            new_task, logs = create_new_task(
+                title=title,
+                role_ids=selected_roles,
+                owner_member_id=selected_owner,
+                creator_member_id=current_member.member_id,
+                weight=weight,
+                next_action=next_action,
+                na_due=na_due,
+                task_due=task_due,
+                status=status,
+                waiting_on_member_id=waiting_on_id,
+                priority=priority,
+                blocker=blocker,
+                notes=notes,
+                now=now,
+            )
+            repo.add_task(new_task)
+            for log in logs:
+                repo.add_activity_log(log)
+            st.toast(t("common.saved_toast", lang))
+            st.rerun()
+        except ValueError:
+            st.error(t("common.general_error", lang))
 
 
 def render_task_card(
@@ -445,7 +448,7 @@ def render_task_card(
             meta_parts.append(
                 f"**{t('common.requested_by', lang)}**: {req_name}"
             )
-        st.caption(" ｜ ".join(meta_parts))
+        st.caption(t("common.meta_separator", lang).join(meta_parts))
 
         # 2行目：現在の NA
         st.markdown(
@@ -515,8 +518,8 @@ def render_task_card(
                         st.rerun()
                     except OptimisticLockError:
                         st.error(t("common.lock_error", lang))
-                    except ValueError as e:
-                        st.error(str(e))
+                    except ValueError:
+                        st.error(t("common.general_error", lang))
 
         # 4行目：F8 全項目の編集・F9 アーカイブ/復元・F10 変更履歴
         with st.expander(t("task_form.full_edit_expander", lang)):
@@ -700,8 +703,8 @@ def render_task_card(
                         st.rerun()
                     except OptimisticLockError:
                         st.error(t("common.lock_error", lang))
-                    except ValueError as e:
-                        st.error(str(e))
+                    except ValueError:
+                        st.error(t("common.general_error", lang))
 
             with btn_col2:
                 if task.assignment_status == "相談中":
@@ -738,6 +741,8 @@ def render_task_card(
                             st.rerun()
                         except OptimisticLockError:
                             st.error(t("common.lock_error", lang))
+                        except ValueError:
+                            st.error(t("common.general_error", lang))
 
             with btn_col3:
                 # F9 アーカイブ／復元
@@ -762,6 +767,8 @@ def render_task_card(
                             st.rerun()
                         except OptimisticLockError:
                             st.error(t("common.lock_error", lang))
+                        except ValueError:
+                            st.error(t("common.general_error", lang))
                 else:
                     if st.button(
                         f"♻️ {t('common.restore_btn', lang)}",
@@ -783,6 +790,8 @@ def render_task_card(
                             st.rerun()
                         except OptimisticLockError:
                             st.error(t("common.lock_error", lang))
+                        except ValueError:
+                            st.error(t("common.general_error", lang))
 
             # F10 変更履歴の表示
             st.divider()
@@ -803,6 +812,8 @@ def render_task_card(
                         if log.field
                         else ""
                     )
+                    bullet = "• " if lang == "en" else "・"
+                    sep = t("common.meta_separator", lang)
                     st.caption(
-                        f"・{format_datetime(log.timestamp, lang)} ｜ {actor_name} ｜ `{log.action}`{detail}"
+                        f"{bullet}{format_datetime(log.timestamp, lang)}{sep}{actor_name}{sep}`{log.action}`{detail}"
                     )

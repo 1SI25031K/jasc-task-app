@@ -30,7 +30,7 @@ settings = repo.get_settings()
 hdr_col1, hdr_col2 = st.columns([3, 1])
 with hdr_col1:
     st.title(
-        f"🙋 {t('my_tasks.title', lang)}（{current_member.get_name(lang)}）"
+        t("my_tasks.title_with_name", lang, name=current_member.get_name(lang))
     )
 with hdr_col2:
     if st.button(

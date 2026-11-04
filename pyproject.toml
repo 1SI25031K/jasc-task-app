@@ -18,3 +18,8 @@ dependencies = [
 markers = [
     "live_gemini: 実際の Gemini API を呼び出す統合テスト（RUN_LIVE_GEMINI_TESTS=1 のときのみ実行）",
 ]
+
+[dependency-groups]
+dev = [
+    "pip-audit>=2.10.1",
+]

@@ -24,7 +24,9 @@ current_member = get_current_member()
 tasks = repo.list_tasks(include_archived=False)
 settings = repo.get_settings()
 
-st.title(f"💚 {t('checkin.title', lang)}（{current_member.get_name(lang)}）")
+st.title(
+    t("checkin.title_with_name", lang, name=current_member.get_name(lang))
+)
 st.markdown(t("checkin.subtitle", lang))
 
 # 注意書き（4.5・S9：「体調などの詳しい理由は書かなくて大丈夫です（全員が閲覧できます）」）

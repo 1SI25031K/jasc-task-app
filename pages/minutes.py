@@ -63,14 +63,11 @@ with col_m1:
 with col_m2:
     meeting_title = st.text_input(
         t("minutes.meeting_title_label", lang),
-        value="第5回 定例会",
+        value=t("minutes.default_meeting_title", lang),
         key="minutes_meeting_title",
     )
 
-sample_default_text = (
-    "・次回定例会までにメンバーAがスライドのたたき台を作成して共有フォルダに置く。\n"
-    "・会場の空き状況については、候補施設にメールで問い合わせる（担当・期限は要調整）。"
-)
+sample_default_text = t("minutes.sample_text", lang)
 minutes_text = st.text_area(
     t("minutes.minutes_text_label", lang),
     value=st.session_state.get("minutes_raw_text", sample_default_text),
@@ -99,10 +96,10 @@ if st.button(
         st.session_state["extracted_na_candidates"] = candidates
     except RateLimitExceededError:
         st.error(t("minutes.rate_limit_error", lang))
-    except MinutesTooLongError as e:
-        st.error(str(e))
+    except MinutesTooLongError:
+        st.error(t("minutes.too_long_error", lang))
     except Exception:
-        # 5.7：API エラー時は「時間をおいて再試行してください」と表示し、入力したメモは画面に残す
+        # 5.7：API エラー時は「時間をおいて再試行してください」と表示し、入力したメモは画面残す
         st.error(t("minutes.extract_error_retry", lang))
 
 candidates_list: list[NaCandidate] = st.session_state.get(

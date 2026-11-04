@@ -28,7 +28,7 @@ checkins = repo.list_checkins()
 role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 
-st.title(f"📬 {t('inbox.title', lang)}（{current_member.get_name(lang)}）")
+st.title(t("inbox.title_with_name", lang, name=current_member.get_name(lang)))
 st.caption(t("inbox.subtitle", lang))
 
 pending_requests = sorted(
@@ -59,12 +59,13 @@ else:
         )
         weight_label = translate_weight(task.weight, lang)
 
+        sep = t("common.meta_separator", lang)
         with st.container(border=True):
             st.markdown(f"#### 📩 {task.title}")
             st.caption(
-                f"**{t('common.requested_by', lang)}**: {req_name} ｜ "
-                f"**{t('common.role', lang)}**: {role_names} ｜ "
-                f"**{t('common.weight', lang)}**: {weight_label} ｜ "
+                f"**{t('common.requested_by', lang)}**: {req_name}{sep}"
+                f"**{t('common.role', lang)}**: {role_names}{sep}"
+                f"**{t('common.weight', lang)}**: {weight_label}{sep}"
                 f"**{t('common.due_date', lang)}**: {format_date(task.na_due, lang)}"
             )
             st.markdown(
@@ -92,11 +93,12 @@ else:
                         repo.add_activity_log(log)
                         st.toast(t("inbox.accepted_toast", lang))
                         st.rerun()
-                    except (
-                        InvalidAssignmentTransitionError,
-                        OptimisticLockError,
-                    ) as e:
-                        st.error(str(e))
+                    except OptimisticLockError:
+                        st.error(t("common.lock_error", lang))
+                    except InvalidAssignmentTransitionError:
+                        st.error(t("common.invalid_transition_error", lang))
+                    except Exception:
+                        st.error(t("common.general_error", lang))
 
             with col_con:
                 comment_val = st.text_input(
@@ -124,11 +126,12 @@ else:
                             repo.add_activity_log(log)
                             st.toast(t("inbox.consulted_toast", lang))
                             st.rerun()
-                        except (
-                            InvalidAssignmentTransitionError,
-                            OptimisticLockError,
-                        ) as e:
-                            st.error(str(e))
+                        except OptimisticLockError:
+                            st.error(t("common.lock_error", lang))
+                        except InvalidAssignmentTransitionError:
+                            st.error(t("common.invalid_transition_error", lang))
+                        except Exception:
+                            st.error(t("common.general_error", lang))
 
 # 現在「相談中」のタスク一覧（自分が担当または自分が依頼元のもの）
 consulting_tasks = [

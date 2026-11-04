@@ -6,7 +6,11 @@ from datetime import timedelta
 import streamlit as st
 
 from core.i18n import t
-from core.services import is_due_this_week, is_overdue_na, is_stale_task
+from core.services import (
+    get_due_this_week_tasks,
+    get_overdue_tasks,
+    is_stale_task,
+)
 from core.session import (
     get_lang,
     get_now,
@@ -36,14 +40,8 @@ render_page_header(
     key_suffix="alerts",
 )
 
-overdue_tasks = sorted(
-    (task for task in all_tasks if is_overdue_na(task, today)),
-    key=lambda x: (x.na_due, x.task_id),
-)
-due_week_tasks = sorted(
-    (task for task in all_tasks if is_due_this_week(task, today)),
-    key=lambda x: (x.na_due, x.task_id),
-)
+overdue_tasks = get_overdue_tasks(all_tasks, today)
+due_week_tasks = get_due_this_week_tasks(all_tasks, today)
 stale_tasks = sorted(
     (
         task

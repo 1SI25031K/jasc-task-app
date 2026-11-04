@@ -256,6 +256,9 @@ chart1_title = "Overall Completion Rate Trend (%)"
 chart2_title = "Completion Rate by Role (%)"
 chart3_title = "Past Due NAs by Role"
 chart4_title = "Auto Load Trend by Member (pt)"
+empty_snaps = "No historical snapshots yet (updated after morning job)."
+empty_tasks = "No tasks found."
+empty_overdue = "No past due NAs."
 
 [minutes]
 title = "Generate NAs"

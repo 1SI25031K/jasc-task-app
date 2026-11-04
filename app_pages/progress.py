@@ -97,7 +97,9 @@ with col1:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c1)
+            st.altair_chart(c1, use_container_width=True)
+        else:
+            st.caption(t("progress.empty_snaps", lang))
 
 # ② 役職別の現在の完了率（棒グラフ）
 with col2:
@@ -131,7 +133,9 @@ with col2:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c2)
+            st.altair_chart(c2, use_container_width=True)
+        else:
+            st.caption(t("progress.empty_tasks", lang))
 
 col3, col4 = st.columns(2)
 
@@ -163,7 +167,9 @@ with col3:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c3)
+            st.altair_chart(c3, use_container_width=True)
+        else:
+            st.caption(t("progress.empty_overdue", lang))
 
 # ④ メンバー別の自動負荷の推移（折れ線グラフ）
 with col4:
@@ -204,4 +210,6 @@ with col4:
                 )
                 .properties(height=260)
             )
-            st.altair_chart(c4)
+            st.altair_chart(c4, use_container_width=True)
+        else:
+            st.caption(t("progress.empty_snaps", lang))

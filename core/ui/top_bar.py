@@ -285,6 +285,7 @@ div[class*="st-key-bg_swatch_sel_"] button {{
                     st.session_state["lang"] = selected_lang
                     current_member.lang = selected_lang
                     repo.update_member_lang(current_member.member_id, selected_lang)
+                    st.rerun()
 
                 st.divider()
                 if st.button(

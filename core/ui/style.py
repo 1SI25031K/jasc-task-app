@@ -476,6 +476,27 @@ div[data-testid="stExpanderDetails"] {
         background-color: rgba(146, 204, 255, 0.12) !important;
     }
 }
+
+/* ==============================================================================
+   エラー・例外・通知メッセージ内の長大URL・テキストの自動折り返し（横あふれ防止）
+   ============================================================================== */
+[data-testid="stNotification"],
+[data-testid="stException"],
+[data-testid="stAlert"] {
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+
+[data-testid="stNotification"] code,
+[data-testid="stException"] code,
+[data-testid="stAlert"] code,
+[data-testid="stNotification"] pre,
+[data-testid="stException"] pre,
+[data-testid="stAlert"] pre {
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    overflow-x: auto !important;
+}
 </style>
 """
 

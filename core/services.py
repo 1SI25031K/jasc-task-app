@@ -40,6 +40,26 @@ def is_due_this_week(task: Task, today: date) -> bool:
     return today <= task.na_due <= today + timedelta(days=7)
 
 
+def get_overdue_tasks(
+    tasks: Iterable[Task], today: date, member_id: str | None = None
+) -> list[Task]:
+    """期限切れ NA を持つタスクの一覧を返す（5.5 準拠：status ≠ 完了、未アーカイブ、na_due < 今日）。"""
+    res = [t for t in tasks if is_overdue_na(t, today)]
+    if member_id is not None:
+        res = [t for t in res if t.owner_member_id == member_id]
+    return sorted(res, key=lambda x: (x.na_due, x.task_id))
+
+
+def get_due_this_week_tasks(
+    tasks: Iterable[Task], today: date, member_id: str | None = None
+) -> list[Task]:
+    """今週期限の NA を持つタスクの一覧を返す（5.5 準拠：status ≠ 完了、未アーカイブ、今日 <= na_due <= 今日+7日）。"""
+    res = [t for t in tasks if is_due_this_week(t, today)]
+    if member_id is not None:
+        res = [t for t in res if t.owner_member_id == member_id]
+    return sorted(res, key=lambda x: (x.na_due, x.task_id))
+
+
 def is_stale_task(
     task: Task, now: datetime, stale_days: int = 7
 ) -> bool:
@@ -557,23 +577,16 @@ def build_home_summary(
     today: date,
     lang: LangCode = "ja",
 ) -> str:
-    """ホーム画面に表示するログイン中メンバーの状況1行サマリーを構築する。"""
-    active_tasks = [
-        t
-        for t in tasks
-        if t.owner_member_id == member_id
-        and not t.archived
-        and t.status != "完了"
-    ]
-    overdue_count = sum(1 for t in active_tasks if t.na_due < today)
-    week_limit = today + timedelta(days=7)
-    due_week_count = sum(
-        1 for t in active_tasks if today <= t.na_due <= week_limit
-    )
+    """ホーム画面に表示するログイン中メンバーの状況1行サマリーを構築する（5.5 判定ルール準拠）。"""
+    all_tasks = list(tasks)
+    # 5.5 判定ルール（status ≠ 完了、未アーカイブ、na_due < 今日）に統一
+    overdue_count = len(get_overdue_tasks(all_tasks, today))
+    # 5.5 判定ルール（status ≠ 完了、未アーカイブ、今日 <= na_due <= 今日+7日）に統一
+    due_week_count = len(get_due_this_week_tasks(all_tasks, today))
 
     requests_count = sum(
         1
-        for t in tasks
+        for t in all_tasks
         if t.owner_member_id == member_id
         and not t.archived
         and t.assignment_status in ("依頼中", "相談中")

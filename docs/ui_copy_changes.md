@@ -111,7 +111,7 @@
 
 | キー | 変更前 (ja) | 変更後 (ja) | 変更前 (en) | 変更後 (en) | 変更理由 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `minutes.ai_note` | (新規) | AI が候補を作ります。内容を確認してから登録してください。 | (New) | AI generates candidate next actions. Review before saving. | 要件で指定された1行注記 |
+| `minutes.ai_note` | (新規) | Gemini APIで候補を作成します。Gemini は AI であり、不正確な情報を表示することがあります。内容を確認してから登録してください。 | (New) | AI generates candidate next actions. Review before saving. | 要件で指定された1行注記 |
 | `minutes.extract_btn` | :material/auto_awesome: NA 候補を作成する | :material/add_task: NA 候補を作成 | :material/auto_awesome: Generate NA Candidates | :material/add_task: Generate NA Candidates | キラキラ（auto_awesome）アイコン撤廃 |
 | `minutes.candidates_section` | 抽出された NA 候補（内容を確認・修正し、登録する行にチェックを入れてください） | 抽出された NA 候補 | Generated NA Candidates (Review, edit, and check the rows to register) | Generated NA Candidates | 説明的カッコ削除 |
 | `minutes.save_selected_btn` | :material/move_to_inbox: チェックした候補をまとめて登録する | 選択した候補を登録 | :material/move_to_inbox: Register Selected Candidates | Register Selected Candidates | 簡潔化 |

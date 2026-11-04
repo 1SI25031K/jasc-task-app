@@ -1,0 +1,69 @@
+# ==============================================================================
+# JASC79 タスク・NA管理アプリ Streamlit 設定（Material Design 3 / M3 Expressive）
+# ==============================================================================
+
+[client]
+toolbarMode = "minimal"
+
+[theme]
+base = "light"
+primaryColor = "#00639b"               # M3 Primary (Blue 40)
+backgroundColor = "#fdfcff"            # M3 Surface (Light)
+secondaryBackgroundColor = "#f1f3f8"   # M3 Surface Container Low / Cards
+textColor = "#191c1e"                  # M3 On-Surface
+borderColor = "#c1c7ce"                # M3 Outline Variant
+baseRadius = "12px"                    # M3 Shape Medium (Cards / Containers)
+buttonRadius = "20px"                  # M3 Expressive Pill Button (40px height)
+showWidgetBorder = true
+showSidebarBorder = true
+
+# セマンティックカラー（M3 トナルパレット）
+redColor = "#ba1a1a"                   # M3 Error (Past due)
+orangeColor = "#944a00"                # M3 Warning (Due this week / Waiting)
+yellowColor = "#785a00"                # M3 Attention
+greenColor = "#006e2c"                 # M3 Success (Completed / Capacity Low)
+blueColor = "#00639b"                  # M3 Primary (In Progress)
+violetColor = "#6750a4"                # M3 Tertiary (Pending request)
+grayColor = "#44474f"                  # M3 Neutral Variant (Not started / Archived)
+
+# タイポグラフィ（Google Sans Flex + Noto Sans JP）
+font = "'Google Sans Flex', 'Noto Sans JP', sans-serif:https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,400..700&family=Noto+Sans+JP:wght@400;500;600;700&display=swap"
+headingFont = "'Google Sans Flex', 'Noto Sans JP', sans-serif:https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,600..700&family=Noto+Sans+JP:wght@600;700&display=swap"
+baseFontSize = 14
+baseFontWeight = 400
+headingFontSizes = ["32px", "24px", "20px", "16px", "14px", "12px"]
+headingFontWeights = [600, 600, 600, 500, 500, 500]
+metricValueFontSize = "2.25rem"
+metricValueFontWeight = 700
+paddingTop = "1.5rem"
+paddingBottom = "2rem"
+
+[theme.sidebar]
+backgroundColor = "#f8f9fa"
+secondaryBackgroundColor = "#e7e9ee"
+textColor = "#191c1e"
+borderColor = "#c1c7ce"
+paddingTop = "1rem"
+paddingBottom = "1.5rem"
+
+[theme.dark]
+primaryColor = "#92ccff"               # M3 Primary (Blue 80)
+backgroundColor = "#111315"            # M3 Surface (Dark)
+secondaryBackgroundColor = "#1e2022"   # M3 Surface Container (Dark)
+textColor = "#e1e2e5"                  # M3 On-Surface (Dark)
+borderColor = "#41484d"                # M3 Outline Variant (Dark)
+
+redColor = "#ffb4ab"
+orangeColor = "#ffb785"
+yellowColor = "#f9bd00"
+greenColor = "#74db81"
+blueColor = "#92ccff"
+violetColor = "#cfbcff"
+grayColor = "#8e9099"
+
+[theme.dark.sidebar]
+backgroundColor = "#141618"
+secondaryBackgroundColor = "#282a2d"
+textColor = "#e1e2e5"
+borderColor = "#41484d"
+

@@ -61,7 +61,7 @@ else:
 
         sep = t("common.meta_separator", lang)
         with st.container(border=True):
-            st.markdown(f"#### 📩 {task.title}")
+            st.markdown(f"#### :material/mail: {task.title}")
             st.caption(
                 f"**{t('common.requested_by', lang)}**: {req_name}{sep}"
                 f"**{t('common.role', lang)}**: {role_names}{sep}"
@@ -69,7 +69,7 @@ else:
                 f"**{t('common.due_date', lang)}**: {format_date(task.na_due, lang)}"
             )
             st.markdown(
-                f"👉 **{t('common.next_action', lang)}**: {task.next_action}"
+                f":material/arrow_forward: **{t('common.next_action', lang)}**: {task.next_action}"
             )
 
             col_acc, col_con = st.columns([1, 2])

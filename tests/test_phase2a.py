@@ -178,7 +178,7 @@ def test_pages_2a_and_2b_render_without_exception() -> None:
     assert not at_checkin.exception
     assert len(at_checkin.success) == 1
 
-    # F14 議事メモからNA生成：候補抽出ボタンが動くことを確認
+    # F14 NA生成：候補抽出ボタンが動くことを確認
     at_min = AppTest.from_file(str(app_path), default_timeout=15).run()
     at_min.switch_page("pages/minutes.py").run()
     at_min.button(key="minutes_extract_btn").click().run()

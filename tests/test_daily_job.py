@@ -99,8 +99,8 @@ def test_daily_job_dry_run_does_not_send_or_write_logs() -> None:
 
     assert res.dry_run is True
     assert res.snapshot_count > 0
-    assert "JASC79 毎朝の NA まとめ" in res.morning_summary_text
-    assert "JASC79 週次まとめ" in res.weekly_summary_text
+    assert "JASC 毎朝の NA まとめ" in res.morning_summary_text
+    assert "JASC 週次まとめ" in res.weekly_summary_text
     assert len(res.planned_dms) > 0
 
     # dry_run なので実際には1件も送信されておらず、シートにも書き込まれていないこと

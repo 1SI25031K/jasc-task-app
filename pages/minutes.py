@@ -1,4 +1,4 @@
-"""F14：議事メモから NA 生成画面。議事メモを貼り付け → 候補抽出 → 確認・修正 → チェックした行だけ登録する。"""
+"""F14：NA 生成画面。議事メモを貼り付け → 候補抽出 → 確認・修正 → チェックした行だけ登録する。"""
 
 from __future__ import annotations
 
@@ -25,6 +25,7 @@ from core.session import (
     get_repo,
     get_today,
 )
+from core.ui.loading import m3_loading_indicator
 
 repo = get_repo()
 lang = get_lang()
@@ -48,7 +49,7 @@ owner_labels = {
     for m in members
 }
 
-st.title(f"📝 {t('minutes.title', lang)}")
+st.title(f":material/edit_note: {t('minutes.title', lang)}")
 
 # 注意書き（5.7・S9：「個人情報は貼り付けないでください」）
 st.warning(t("minutes.privacy_warning", lang))
@@ -87,12 +88,18 @@ if st.button(
         updated_history = check_and_record_rate_limit(call_history, now=now)
         st.session_state["na_extract_timestamps"] = updated_history
 
-        candidates = extractor.extract(
-            raw_minutes=minutes_text,
-            meeting_date=meeting_date,
-            roles=roles,
-            members=members,
+        loading_text = (
+            "AI が議事メモから NA 候補を生成中…"
+            if lang == "ja"
+            else "Generating NA candidates from meeting minutes…"
         )
+        with m3_loading_indicator(text=loading_text):
+            candidates = extractor.extract(
+                raw_minutes=minutes_text,
+                meeting_date=meeting_date,
+                roles=roles,
+                members=members,
+            )
         st.session_state["extracted_na_candidates"] = candidates
     except RateLimitExceededError:
         st.error(t("minutes.rate_limit_error", lang))
@@ -159,7 +166,7 @@ if candidates_list:
                     options=member_options,
                     index=owner_idx,
                     format_func=lambda mid: (
-                        f"⚠️ {t('common.unassigned', lang)}"
+                        f":material/warning: {t('common.unassigned', lang)}"
                         if not mid
                         else owner_labels.get(mid, mid)
                     ),
@@ -226,7 +233,7 @@ if candidates_list:
         t("minutes.save_selected_btn", lang),
         type="primary",
         disabled=(not selected_Only or any_incomplete),
-        use_container_width=True,
+        width="stretch",
         key="minutes_save_all_btn",
     ):
         meeting_id = f"mtg_{uuid.uuid4().hex[:6]}"

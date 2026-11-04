@@ -23,7 +23,7 @@ snapshots = repo.list_daily_snapshots()
 role_map = {r.role_id: r for r in roles}
 member_map = {m.member_id: m for m in members}
 
-st.title(f"📈 {t('progress.title', lang)}")
+st.title(f":material/trending_up: {t('progress.title', lang)}")
 
 # 期間選択（4週／12週／全期間）
 period_options = ["4w", "12w", "all"]

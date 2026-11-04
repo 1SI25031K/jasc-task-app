@@ -38,7 +38,7 @@ member_map = {m.member_id: m for m in members}
 # ページタイトル & 新規タスク作成ボタン
 hdr_col1, hdr_col2 = st.columns([3, 1])
 with hdr_col1:
-    st.title(f"🏠 {t('board.title', lang)}")
+    st.title(f":material/dashboard: {t('board.title', lang)}")
     st.caption(t("board.subtitle", lang))
 with hdr_col2:
     if st.button(
@@ -66,7 +66,7 @@ if pending_req_count > 0 or checkin_unanswered:
                     t("board.banner_requests", lang, count=pending_req_count)
                 )
                 if st.button(
-                    f"👉 {t('board.banner_requests_btn', lang)}",
+                    f":material/arrow_forward: {t('board.banner_requests_btn', lang)}",
                     key="banner_go_inbox",
                     use_container_width=True,
                 ):
@@ -76,7 +76,7 @@ if pending_req_count > 0 or checkin_unanswered:
             with st.container(border=True):
                 st.info(t("board.banner_checkin", lang))
                 if st.button(
-                    f"👉 {t('board.banner_checkin_btn', lang)}",
+                    f":material/arrow_forward: {t('board.banner_checkin_btn', lang)}",
                     key="banner_go_checkin",
                     use_container_width=True,
                 ):
@@ -101,7 +101,7 @@ def _render_role_card(summary: RoleBoardSummary) -> None:
     )
     with st.container(border=True):
         st.subheader(role.get_name(lang))
-        st.caption(f"👤 {t('common.lead', lang)}: **{lead_name}**")
+        st.caption(f":material/person: {t('common.lead', lang)}: **{lead_name}**")
 
         overdue_badge = (
             f":red-badge[{t('board.overdue_nas', lang)}: {summary.overdue_na_count}]"
@@ -125,14 +125,14 @@ def _render_role_card(summary: RoleBoardSummary) -> None:
                 nt_owner.get_name(lang) if nt_owner else nt.owner_member_id
             )
             st.markdown(
-                f"📌 **{t('board.nearest_na', lang)}**: {nt.next_action}\n"
+                f":material/push_pin: **{t('board.nearest_na', lang)}**: {nt.next_action}\n"
                 f"（{format_date(nt.na_due, lang)} ／ {nt_owner_name}）"
             )
         else:
-            st.caption(f"📌 {t('board.no_open_na', lang)}")
+            st.caption(f":material/push_pin: {t('board.no_open_na', lang)}")
 
         if st.button(
-            f"📂 {t('board.open_role_detail', lang)}",
+            f":material/folder: {t('board.open_role_detail', lang)}",
             key=f"open_role_{role.role_id}",
             use_container_width=True,
         ):

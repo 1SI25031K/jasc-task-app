@@ -33,7 +33,7 @@ member_map = {m.member_id: m for m in members}
 
 hdr_col1, hdr_col2 = st.columns([3, 1])
 with hdr_col1:
-    st.title(f"📑 {t('all_tasks.title', lang)}")
+    st.title(f":material/format_list_bulleted: {t('all_tasks.title', lang)}")
 with hdr_col2:
     if st.button(
         t("app.new_task_btn", lang),

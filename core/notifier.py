@@ -98,7 +98,7 @@ def format_morning_summary(
                 f"Good morning! ({today.isoformat()}) There are no NAs due today or past their due date. Have a great day! ({board_url})"
             )
         else:
-            lines.append(f"*[JASC79 Daily NA Summary — {today.isoformat()}]*")
+            lines.append(f"*[JASC Daily NA Summary — {today.isoformat()}]*")
             lines.append(
                 f"Summary: Past due NAs: *{len(overdue_tasks)}* | Due today: *{len(due_today_tasks)}* | Open tasks: *{len(active_tasks)}*"
             )
@@ -130,7 +130,7 @@ def format_morning_summary(
                 f"おはようございます！（{today.isoformat()}）本日が期限の NA や、期限を過ぎた NA はありません。今日もよろしくお願いします！（{board_url}）"
             )
         else:
-            lines.append(f"*【JASC79 毎朝の NA まとめ（{today.isoformat()}）】*")
+            lines.append(f"*【JASC 毎朝の NA まとめ（{today.isoformat()}）】*")
             lines.append(
                 f"件数サマリー：期限を過ぎた NA *{len(overdue_tasks)}件* ／ 今日が期限の NA *{len(due_today_tasks)}件* ／ 未完了タスク全体 *{len(active_tasks)}件*"
             )
@@ -515,7 +515,7 @@ def format_weekly_completed_summary(
 
     if lang == "en":
         lines.append(
-            f"*[JASC79 Weekly Completed Tasks Summary ({week_ago.isoformat()} – {today.isoformat()})]*"
+            f"*[JASC Weekly Completed Tasks Summary ({week_ago.isoformat()} – {today.isoformat()})]*"
         )
         lines.append(
             f"Thank you all for your hard work last week! Total completed tasks last week: *{len(completed_last_week)}*"
@@ -558,7 +558,7 @@ def format_weekly_completed_summary(
         lines.append(f"\n👉 View Progress Charts: {progress_url}")
     else:
         lines.append(
-            f"*【JASC79 週次まとめ：先週の完了タスク（{week_ago.isoformat()} 〜 {today.isoformat()}）】*"
+            f"*【JASC 週次まとめ：先週の完了タスク（{week_ago.isoformat()} 〜 {today.isoformat()}）】*"
         )
         lines.append(
             f"先週も1週間お疲れさまでした！先週完了したタスクは全体で *{len(completed_last_week)}件* です。"

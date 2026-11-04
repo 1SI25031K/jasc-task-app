@@ -26,7 +26,7 @@ all_tasks = repo.list_tasks(include_archived=False)
 checkins = repo.list_checkins()
 settings = repo.get_settings()
 
-st.title(f"⏰ {t('alerts.title', lang)}")
+st.title(f":material/alarm: {t('alerts.title', lang)}")
 st.caption(t("alerts.subtitle", lang))
 
 overdue_tasks = sorted(

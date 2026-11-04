@@ -30,7 +30,7 @@ tasks = repo.list_tasks(include_archived=False)
 checkins = repo.list_checkins()
 settings = repo.get_settings()
 
-st.title(f"🗺️ {t('capacity_map.title', lang)}")
+st.title(f":material/map: {t('capacity_map.title', lang)}")
 
 # 必須要件（F15・6.3）：評価には使わない旨をページ上部に常に表示
 st.info(t("capacity_map.policy_banner", lang))
@@ -51,7 +51,7 @@ total_loads = {
 scaled_loads = scale_auto_loads_to_10(total_loads)
 
 # 1. メンバー別の自動負荷（承諾済 vs 依頼・相談中 の色分け横棒グラフ 5.3・F15）
-st.subheader(f"📊 {t('capacity_map.chart_title', lang)}")
+st.subheader(f":material/bar_chart: {t('capacity_map.chart_title', lang)}")
 chart_rows = []
 accepted_label = t("capacity_map.legend_accepted", lang)
 pending_label = t("capacity_map.legend_pending", lang)

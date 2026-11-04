@@ -274,7 +274,7 @@ def _build_repo_and_notifier(
 def main() -> None:
     """コマンドライン引数を解析し、日次処理を実行して結果を表示する。"""
     parser = argparse.ArgumentParser(
-        description="JASC79 毎朝の定時処理（日次スナップショット・毎朝まとめ・個人DM・週次まとめ）"
+        description="JASC 毎朝の定時処理（日次スナップショット・毎朝まとめ・個人DM・週次まとめ）"
     )
     parser.add_argument(
         "--dry-run",

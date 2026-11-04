@@ -76,7 +76,12 @@ def create_repository_from_config(
         except Exception:
             cfg = {}
 
-    backend = str(cfg.get("repository_backend", "memory")).strip().lower()
+    import os
+
+    backend = (
+        os.environ.get("JASC_REPOSITORY_BACKEND", "").strip().lower()
+        or str(cfg.get("repository_backend", "memory")).strip().lower()
+    )
     if backend == "sheets":
         spreadsheet_id = str(cfg.get("spreadsheet_id", "")).strip()
         sa_info = cfg.get("gcp_service_account")
@@ -192,8 +197,14 @@ def get_current_member() -> Member:
 
 
 def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
-    """6.3 ステータスの色（未着手=グレー、進行中=青、待ち=黄、完了=緑、期限切れ=赤）を Markdown バッジで返す。"""
+    """6.3 ステータスの色（未着手=グレー、進行中=青、待ち=黄、完了=緑、期限切れ=赤）とアイコンを Markdown バッジで返す。"""
     status_label = translate_status(task.status, lang)
+    status_icon_map = {
+        "未着手": ":material/radio_button_unchecked:",
+        "進行中": ":material/play_circle:",
+        "待ち": ":material/hourglass_empty:",
+        "完了": ":material/check_circle:",
+    }
     color_map = {
         "未着手": "gray",
         "進行中": "blue",
@@ -201,24 +212,31 @@ def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
         "完了": "green",
     }
     color = color_map.get(task.status, "gray")
-    badges = [f":{color}-badge[{status_label}]"]
+    icon = status_icon_map.get(task.status, "")
+    badges = [f":{color}-badge[{icon} {status_label}]"]
 
     if is_overdue_na(task, today):
-        badges.append(f":red-badge[{t('common.overdue_badge', lang)}]")
+        badges.append(
+            f":red-badge[:material/error: {t('common.overdue_badge', lang)}]"
+        )
     elif is_due_this_week(task, today):
-        badges.append(f":orange-badge[{t('common.due_this_week_badge', lang)}]")
+        badges.append(
+            f":orange-badge[:material/schedule: {t('common.due_this_week_badge', lang)}]"
+        )
 
     if task.assignment_status == "依頼中":
         badges.append(
-            f":violet-badge[{translate_assignment_status('依頼中', lang)}]"
+            f":violet-badge[:material/forward_to_inbox: {translate_assignment_status('依頼中', lang)}]"
         )
     elif task.assignment_status == "相談中":
         badges.append(
-            f":orange-badge[{translate_assignment_status('相談中', lang)}]"
+            f":orange-badge[:material/chat: {translate_assignment_status('相談中', lang)}]"
         )
 
     if task.archived:
-        badges.append(f":gray-badge[{t('common.archived_badge', lang)}]")
+        badges.append(
+            f":gray-badge[:material/archive: {t('common.archived_badge', lang)}]"
+        )
 
     return " ".join(badges)
 
@@ -226,17 +244,17 @@ def format_status_badge(task: Task, today: date, lang: LangCode) -> str:
 def format_subjective_score_badge(
     score: int | None, is_fresh: bool, lang: LangCode
 ) -> str:
-    """6.3 体感負荷の色（1〜4=緑、5〜7=黄、8〜10=赤）と数値を合わせて表示する。"""
+    """6.3 体感負荷の色（1〜4=緑、5〜7=黄、8〜10=赤）とアイコン・数値を合わせて表示する。"""
     if score is None or not is_fresh:
-        return f":gray-badge[{t('common.unanswered', lang)}]"
+        return f":gray-badge[:material/help_outline: {t('common.unanswered', lang)}]"
     if score <= 4:
-        return f":green-badge[🟢 {score} / 10]"
+        return f":green-badge[:material/sentiment_satisfied: {score} / 10]"
     if score <= 7:
-        return f":orange-badge[🟡 {score} / 10]"
-    return f":red-badge[🔴 {score} / 10]"
+        return f":orange-badge[:material/sentiment_neutral: {score} / 10]"
+    return f":red-badge[:material/sentiment_dissatisfied: {score} / 10]"
 
 
-@st.dialog("➕ タスク作成 / Create Task", width="large")
+@st.dialog("タスク作成 / Create Task", width="large")
 def open_create_task_dialog(default_role_id: str = "") -> None:
     """F7 新規タスク作成ダイアログを表示する。"""
     repo = get_repo()
@@ -452,7 +470,7 @@ def render_task_card(
 
         # 2行目：現在の NA
         st.markdown(
-            f"👉 **{t('common.next_action', lang)}**: {task.next_action}"
+            f":material/arrow_forward: **{t('common.next_action', lang)}**: {task.next_action}"
         )
 
         if task.assignment_status == "相談中" and task.assignment_comment:
@@ -748,7 +766,7 @@ def render_task_card(
                 # F9 アーカイブ／復元
                 if not task.archived:
                     if st.button(
-                        f"📦 {t('common.archive_btn', lang)}",
+                        f":material/archive: {t('common.archive_btn', lang)}",
                         key=f"{key_prefix}_e_arch_{task.task_id}",
                         use_container_width=True,
                     ):
@@ -771,7 +789,7 @@ def render_task_card(
                             st.error(t("common.general_error", lang))
                 else:
                     if st.button(
-                        f"♻️ {t('common.restore_btn', lang)}",
+                        f":material/unarchive: {t('common.restore_btn', lang)}",
                         key=f"{key_prefix}_e_rest_{task.task_id}",
                         use_container_width=True,
                     ):

@@ -73,7 +73,7 @@ with st.container(border=True):
     for idx, val in enumerate([1, 2, 3, 4]):
         with c_low[idx]:
             if st.button(
-                f"🟢 {val}",
+                f":material/sentiment_satisfied: {val}",
                 key=f"checkin_btn_{val}",
                 use_container_width=True,
             ):
@@ -85,7 +85,7 @@ with st.container(border=True):
     for idx, val in enumerate([5, 6, 7]):
         with c_mid[idx]:
             if st.button(
-                f"🟡 {val}",
+                f":material/sentiment_neutral: {val}",
                 key=f"checkin_btn_{val}",
                 use_container_width=True,
             ):
@@ -97,7 +97,7 @@ with st.container(border=True):
     for idx, val in enumerate([8, 9, 10]):
         with c_high[idx]:
             if st.button(
-                f"🔴 {val}",
+                f":material/sentiment_dissatisfied: {val}",
                 key=f"checkin_btn_{val}",
                 use_container_width=True,
             ):

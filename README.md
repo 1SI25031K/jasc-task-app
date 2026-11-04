@@ -1,4 +1,4 @@
-# JASC79 タスク・NA管理アプリ
+# JASC タスクマネージャー
 
 日米学生会議（JASC79）実行委員会のタスク・次のアクション（NA）・体感負荷を統合管理し、特定のメンバーへの過負荷を防ぎながら全員で協力して会議を成功させるための Web アプリケーションです。
 
@@ -103,7 +103,7 @@ uv run streamlit run app.py
    - アプリ名、ユーザーサポートメールを入力して保存
 2. **認証情報** > **認証情報を作成** > **OAuth クライアント ID**:
    - アプリケーションの種類：**ウェブ アプリケーション**
-   - 名前：`JASC79 Task App OAuth`
+   - 名前：`JASC Task Manager OAuth`
    - **承認済みのリダイレクト URI**:
      - ローカル用: `http://localhost:8501/oauth2callback`
      - 本番用: `https://<あなたのサブドメイン>.streamlit.app/oauth2callback`
@@ -252,4 +252,21 @@ uv run python scripts/daily_job.py --dry-run
    - 定例会の冒頭 5 分で「期限アラート（F5）」および「余力マップ（F15）」を画面共有し、遅れが生じている箇所や負荷が集中しているメンバーのフォローを話し合います。
 4. **口頭・チャット依頼のアプリ登録**:
    - 他のメンバーにタスクを依頼する場合は、必ずアプリ上で「依頼」として起票します。口頭や Slack で合意した場合も、後からアプリに登録して相手の承諾を受ける運用とします。
+
+---
+
+## 11. フォント・アセットのライセンス
+
+本アプリケーションでは、Material Design 3（M3 Expressive）準拠のタイポグラフィおよびアイコンとして以下を採用しています：
+
+- **Google Sans Flex**:
+  - 用途: 見出しおよび英数字テキスト
+  - ライセンス: [SIL Open Font License, Version 1.1 (OFL-1.1)](https://openfontlicense.org/)
+- **Noto Sans JP**:
+  - 用途: 日本語文字（ひらがな・カタカナ・漢字）のフォールバック表示
+  - ライセンス: [SIL Open Font License, Version 1.1 (OFL-1.1)](https://openfontlicense.org/)
+- **Google Material Symbols (Rounded)**:
+  - 用途: アプリケーション内全アイコン（`:material/icon_name:`）
+  - ライセンス: [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0.html)
+
 

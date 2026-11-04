@@ -9,6 +9,7 @@ import streamlit as st
 from core.i18n import t
 from core.models import LangCode, Member
 from core.repository import Repository
+from core.ui.google_signin import render_google_signin_button
 
 AuthStatus = Literal["unauthenticated", "unauthorized", "authorized"]
 
@@ -70,6 +71,12 @@ def get_current_auth_state() -> tuple[bool, str | None]:
         if isinstance(override, tuple) and len(override) == 2:
             return bool(override[0]), override[1]
 
+    import os
+
+    dev_auth_email = os.environ.get("JASC_DEV_AUTH_EMAIL", "").strip()
+    if dev_auth_email:
+        return True, dev_auth_email
+
     try:
         user_obj = getattr(st, "user", None)
         if user_obj is None:
@@ -110,12 +117,7 @@ def require_authenticated_member(
         st.info(t("auth.login_description", lang))
         if not _is_oidc_configured() and "_test_auth_override" not in st.session_state:
             st.warning(t("auth.auth_not_configured", lang))
-        if st.button(
-            t("auth.login_btn", lang),
-            type="primary",
-            key="auth_login_btn",
-        ):
-            st.login("google")
+        render_google_signin_button(lang=lang)
         st.stop()
 
     # 名簿照合のために members のみを取得する（tasks 等の業務データは一切読み込まない：S1）

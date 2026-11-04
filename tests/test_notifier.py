@@ -37,7 +37,7 @@ def test_morning_summary_normal_and_zero_cases() -> None:
         app_url="https://jasc79.example.com",
         lang="ja",
     )
-    assert "【JASC79 毎朝の NA まとめ" in msg_ja
+    assert "【JASC 毎朝の NA まとめ" in msg_ja
     assert "期限を過ぎた NA" in msg_ja
     assert "今日が期限の NA" in msg_ja
     assert "※Slack ID 未設定：1名" in msg_ja

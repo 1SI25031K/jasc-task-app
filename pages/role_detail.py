@@ -36,7 +36,7 @@ default_idx = role_ids.index(default_rid) if default_rid in role_ids else 0
 
 hdr_col1, hdr_col2 = st.columns([3, 1])
 with hdr_col1:
-    st.title(f"📂 {t('role_detail.title', lang)}")
+    st.title(f":material/folder: {t('role_detail.title', lang)}")
 with hdr_col2:
     selected_role_id = st.selectbox(
         t("role_detail.select_role", lang),
@@ -94,7 +94,7 @@ with top_col1:
 
 with top_col2:
     with st.container(border=True):
-        st.markdown(f"**👥 {t('role_detail.assigned_members', lang)}**")
+        st.markdown(f"**:material/group: {t('role_detail.assigned_members', lang)}**")
         this_role_assignments = [
             ra for ra in role_assignments if ra.role_id == selected_role_id
         ]

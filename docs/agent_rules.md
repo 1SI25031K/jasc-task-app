@@ -32,6 +32,7 @@
 - 秘密情報（API キー、クライアントシークレット、サービスアカウント鍵、cookie_secret）をコード・コミット・ログ・チャットに出力しない。`.streamlit/secrets.toml` は Git 管理外。
 - 実在の個人名・メールアドレス・電話番号をコードやテストデータに書かない。ダミー（例：`メンバーA` / `member_a@example.com`）を使う。
 - ユーザー入力を `unsafe_allow_html=True` で表示しない。
+- UI 装飾における静的 CSS / HTML の限定利用：M3 の Progress / Loading indicator や Google ログインボタン等、Streamlit 標準機能で表現できない静的装飾に限り、`core/ui/` 配下の独立モジュールに静的 CSS / SVG を集約して使用することを許可する。ただし、ユーザー入力や AI 出力の文字列を CSS / HTML 内に埋め込むこと（文字列補間）は一切禁止する（S6）。ユーザー入力・AI 出力を表示する箇所は、必ず Streamlit 標準の安全なウィジェット（`st.markdown`, `st.text_input` 等）を使用する。
 - スプレッドシートへの書き込みは `value_input_option="RAW"`。
 - 破壊的なコマンド（ファイルの一括削除、`git push --force`、`git reset --hard` 等）は実行前に必ず私に確認する。
 - 新しいパッケージを追加するときは、名前と理由を先に説明して承認を得る。

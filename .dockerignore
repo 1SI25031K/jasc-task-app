@@ -1,0 +1,35 @@
+# Git & CI
+.git
+.gitignore
+.github
+.devcontainer
+
+# Environment variables & secrets
+.env*.local
+.env.local
+*.key
+*.pem
+*service_account*.json
+credentials.json
+
+# Node & Next.js
+node_modules
+.next
+coverage
+tsconfig.tsbuildinfo
+
+# Python
+.venv
+.streamlit
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+core
+app_pages
+scripts
+tests
+
+# Docs & Scratch
+docs
+scratch

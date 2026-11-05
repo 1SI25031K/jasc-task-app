@@ -14,6 +14,7 @@ node_modules/
 .next/
 out/
 coverage/
+tsconfig.tsbuildinfo
 
 # 環境変数・シークレット・認証鍵（絶対にコミットしない）
 .env*.local

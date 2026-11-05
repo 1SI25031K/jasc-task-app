@@ -9,6 +9,23 @@ __pycache__/
 # Streamlit の秘密情報（絶対にコミットしない）
 .streamlit/secrets.toml
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+
+# 環境変数・シークレット・認証鍵（絶対にコミットしない）
+.env*.local
+.env.local
+*.pem
+*.key
+*service_account*.json
+*service-account*.json
+credentials.json
+client_secret*.json
+
 # OS が自動生成するファイル
 .DS_Store
+
 

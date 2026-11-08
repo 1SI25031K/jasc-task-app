@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
+
+const { auth } = NextAuth(authConfig);
 
 export default auth((req) => {
   const { nextUrl } = req;
   const isLoggedIn = !!req.auth;
-  const email = req.auth?.user?.email?.toLowerCase().trim();
 
   // /api/revalidate へのアクセス: 認証セッションまたは REVALIDATE_TOKEN ヘッダーで許可
   if (nextUrl.pathname.startsWith("/api/revalidate")) {
@@ -25,7 +27,9 @@ export default auth((req) => {
   }
 
   // 公開ルート（ログイン画面、未認証画面）
-  const isPublic = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/unauthorized");
+  const isPublic =
+    nextUrl.pathname.startsWith("/login") ||
+    nextUrl.pathname.startsWith("/unauthorized");
   if (isPublic) {
     return NextResponse.next();
   }
@@ -37,20 +41,9 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 許可リストチェック
-  const allowedList = (process.env.ALLOWED_EMAILS || "")
-    .split(",")
-    .map((e) => e.toLowerCase().trim())
-    .filter(Boolean);
-
-  if (allowedList.length > 0 && email && !allowedList.includes(email)) {
-    return NextResponse.redirect(new URL("/unauthorized", nextUrl.origin));
-  }
-
   return NextResponse.next();
 });
 
 export const config = {
   matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
 };
-

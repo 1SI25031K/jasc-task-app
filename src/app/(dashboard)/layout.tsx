@@ -1,6 +1,8 @@
 import React from "react";
+import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { fetchDashboardData } from "@/lib/data";
+import { verifyMemberAccess } from "@/lib/auth-helpers";
 import { DashboardProvider } from "@/context/DashboardContext";
 import { TopBar } from "@/components/TopBar";
 import { NavTabs } from "@/components/NavTabs";
@@ -29,6 +31,18 @@ export default async function DashboardLayout({
         </div>
       </div>
     );
+  }
+
+  // ログインユーザーが members シートで active=true か検証（S1 認証ゲート）
+  if (process.env.DEV_BYPASS_AUTH !== "true") {
+    const authResult = verifyMemberAccess(
+      !!session?.user,
+      userEmail,
+      dashboardData.members
+    );
+    if (authResult.status !== "authorized") {
+      redirect("/unauthorized");
+    }
   }
 
   return (
@@ -66,4 +80,3 @@ export default async function DashboardLayout({
     </DashboardProvider>
   );
 }
-

@@ -1,28 +1,28 @@
 import NextAuth from "next-auth";
-import Google from "next-auth/providers/google";
+import { authConfig } from "./auth.config";
+import { fetchDashboardData } from "./lib/data";
+import { verifyMemberAccess } from "./lib/auth-helpers";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  providers: [
-    Google({
-      clientId: process.env.AUTH_GOOGLE_ID,
-      clientSecret: process.env.AUTH_GOOGLE_SECRET,
-    }),
-  ],
+  ...authConfig,
   callbacks: {
+    ...authConfig.callbacks,
     async signIn({ user }) {
-      const email = user.email?.toLowerCase().trim();
+      const email = user.email;
       if (!email) return false;
 
-      const allowedList = (process.env.ALLOWED_EMAILS || "")
-        .split(",")
-        .map((e) => e.toLowerCase().trim())
-        .filter(Boolean);
-
-      // 環境変数に指定がある場合はチェック（指定が空なら名簿参照等は後段または全許可）
-      if (allowedList.length > 0 && !allowedList.includes(email)) {
+      try {
+        const data = await fetchDashboardData();
+        const authResult = verifyMemberAccess(true, email, data.members);
+        if (authResult.status !== "authorized") {
+          console.warn(`[auth] Access denied for email: ${email} (status: ${authResult.status})`);
+          return false;
+        }
+        return true;
+      } catch (err) {
+        console.error("[auth] Failed to verify member access against Google Sheets:", err);
         return false;
       }
-      return true;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
@@ -31,9 +31,4 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session;
     },
   },
-  pages: {
-    signIn: "/login",
-    error: "/unauthorized",
-  },
 });
-

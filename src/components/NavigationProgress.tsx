@@ -2,17 +2,17 @@
 
 import React, { useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { useDashboard } from "@/context/DashboardContext";
 
 /**
- * 画面切り替え中・リフレッシュ実行中の最上部ピンク Linear Progress Indicator（フェーズ 7.7 移植）
+ * 画面切り替え中（ページ遷移・ルーティング中）の最上部ピンク Linear Progress Indicator
+ * - バックグラウンドのデータ再検証（isRefreshing）は TopBar の Circular Indicator が担うため、
+ *   本インジケーターは「画面遷移（navigating）」のみに特化して役割を分離。
  * - 高さ 4px
  * - トラック背景: #FFD8E4
  * - 動くインジケーター: #E8467C
  * - prefers-reduced-motion: 静止した 4px バー
  */
 export function NavigationProgress() {
-  const { isRefreshing } = useDashboard();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [navigating, setNavigating] = useState(false);
@@ -37,9 +37,7 @@ export function NavigationProgress() {
     return () => document.removeEventListener("click", handleClick, { capture: true });
   }, []);
 
-  const isActive = navigating || isRefreshing;
-
-  if (!isActive) return null;
+  if (!navigating) return null;
 
   return (
     <div
@@ -85,3 +83,4 @@ export function NavigationProgress() {
     </div>
   );
 }
+

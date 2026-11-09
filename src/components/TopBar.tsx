@@ -32,12 +32,10 @@ export function TopBar({ onMenuClick, bingWallpaper }: TopBarProps) {
   const { currentMember, lang, setLang, userEmail, isRefreshing, refresh, t } = useDashboard();
   const { showSnackbar } = useSnackbar();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [helpOpen, setHelpOpen] = useState(false);
   const [bgOpen, setBgOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const menuRef = useRef<HTMLDivElement>(null);
-  const helpRef = useRef<HTMLDivElement>(null);
   const bgRef = useRef<HTMLDivElement>(null);
 
   // 外側クリックでメニューを閉じる
@@ -46,9 +44,6 @@ export function TopBar({ onMenuClick, bingWallpaper }: TopBarProps) {
       const target = e.target as Node;
       if (menuRef.current && !menuRef.current.contains(target)) {
         setUserMenuOpen(false);
-      }
-      if (helpRef.current && !helpRef.current.contains(target)) {
-        setHelpOpen(false);
       }
       if (bgRef.current && !bgRef.current.contains(target)) {
         setBgOpen(false);
@@ -145,45 +140,14 @@ export function TopBar({ onMenuClick, bingWallpaper }: TopBarProps) {
           </Link>
         </div>
 
-        {/* 右: 操作アイコン群（ヘルプ・背景設定・アバター） */}
+        {/* 右: 操作アイコン群（背景設定・ローディング表示・アバター） */}
         <div className="flex items-center gap-1 sm:gap-2">
-          {/* ヘルプボタン */}
-          <div className="relative" ref={helpRef}>
-            <button
-              onClick={() => {
-                setHelpOpen(!helpOpen);
-                setUserMenuOpen(false);
-                setBgOpen(false);
-              }}
-              className="m3-interactive flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition"
-              title={t("app.help_title")}
-              aria-label={t("app.help_title")}
-            >
-              <MaterialIcon name="help_outline" size={22} />
-            </button>
-
-            {helpOpen && (
-              <div className="absolute right-0 mt-2 w-80 rounded-m3-lg bg-surface-container-high p-4 shadow-xl z-50 text-sm border-none">
-                <h3 className="font-medium text-on-surface mb-2">{t("app.help_title")}</h3>
-                <div className="space-y-2 text-xs text-on-surface-variant">
-                  <p>・<strong>ホーム</strong>：全体の状況サマリーとお知らせの確認</p>
-                  <p>・<strong>役職ボード</strong>：全21役職の担当者・残タスク・NA進捗</p>
-                  <p>・<strong>マイタスク</strong>：自分の担当タスクの確認</p>
-                  <p>・<strong>受信箱</strong>：依頼されたタスクの確認・承諾・相談</p>
-                  <p>・<strong>期限アラート</strong>：期限切れ・今週期限・停滞タスクの監視</p>
-                  <p>・<strong>余力マップ</strong>：自動負荷と体感スコア（1〜10）の乖離検知</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 背景設定ボタン（作業1-9: 7.7 準拠の wallpaper ポップオーバー） */}
+          {/* 背景設定ボタン（7.7 準拠の wallpaper ポップオーバー） */}
           <div className="relative" ref={bgRef}>
             <button
               onClick={() => {
                 setBgOpen(!bgOpen);
                 setUserMenuOpen(false);
-                setHelpOpen(false);
               }}
               className="m3-interactive flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition"
               title={lang === "en" ? "Background Settings" : "背景の設定"}
@@ -258,12 +222,45 @@ export function TopBar({ onMenuClick, bingWallpaper }: TopBarProps) {
             )}
           </div>
 
+          {/* M3 Circular Progress Indicator（不確定型、24px、非対話・アバターの左） */}
+          <div className="flex items-center justify-center px-1">
+            {isRefreshing ? (
+              <div
+                className="flex h-6 w-6 items-center justify-center text-primary pointer-events-none"
+                role="progressbar"
+                aria-label={lang === "en" ? "Loading..." : "読み込み中"}
+                aria-busy="true"
+              >
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="9"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeDasharray="36 60"
+                  />
+                </svg>
+              </div>
+            ) : (
+              <div className="h-6 w-6 invisible" aria-hidden="true" />
+            )}
+          </div>
+
           {/* ユーザーアバター＆ポップオーバーメニュー */}
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => {
                 setUserMenuOpen(!userMenuOpen);
-                setHelpOpen(false);
                 setBgOpen(false);
               }}
               aria-label="アカウントメニューを開く"

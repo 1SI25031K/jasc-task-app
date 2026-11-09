@@ -132,11 +132,11 @@ export default function ProgressPage() {
       {/* ヘッダーと期間切替 */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">{t("progress.title")}</h1>
+          <h1 className="text-2xl font-normal tracking-tight text-on-surface">{t("progress.title")}</h1>
         </div>
 
         {/* M3 Segmented Buttons */}
-        <div className="flex items-center rounded-full bg-[#F3EDF7] p-1 border border-[#C4C7C5]/40">
+        <div className="flex items-center rounded-full bg-surface-container-high p-1 border-none">
           {(["4w", "12w", "all"] as const).map((p) => {
             const isSelected = period === p;
             const label =
@@ -150,8 +150,8 @@ export default function ProgressPage() {
               <button
                 key={p}
                 onClick={() => setPeriod(p)}
-                className={`rounded-full px-3.5 py-1 text-xs font-medium transition ${
-                  isSelected ? "bg-white text-[#1F1F1F] shadow-xs" : "text-[#444746] hover:text-[#1F1F1F]"
+                className={`rounded-full px-3.5 py-1 text-xs font-medium transition m3-interactive ${
+                  isSelected ? "bg-surface-container-lowest text-on-surface shadow-xs" : "text-on-surface-variant hover:text-on-surface"
                 }`}
               >
                 {label}
@@ -161,13 +161,13 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      {/* 4つのグラフグリッド（M3 Cards） */}
+      {/* 4つのグラフグリッド（Level 0 flat, radius 28px, 枠線なし, 影なし） */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* ① 全体完了率推移 */}
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-medium text-[#1F1F1F] mb-4">{t("progress.chart1_title")}</h2>
+        <div className="rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none">
+          <h2 className="text-sm font-medium text-on-surface mb-4">{t("progress.chart1_title")}</h2>
           {chart1Data.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-xs text-[#747775] italic">
+            <div className="h-64 flex items-center justify-center text-xs text-on-surface-variant italic">
               {t("progress.empty_snaps")}
             </div>
           ) : (
@@ -178,7 +178,7 @@ export default function ProgressPage() {
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: "#444746" }} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#444746" }} unit="%" />
                   <Tooltip formatter={(value: any) => [`${value}%`, lang === "en" ? "Completion" : "完了率"]} />
-                  <Line type="monotone" dataKey="rate" stroke="#0B57D0" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                  <Line type="monotone" dataKey="rate" stroke="var(--md-sys-color-primary, #0B57D0)" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -186,10 +186,10 @@ export default function ProgressPage() {
         </div>
 
         {/* ② 役職別の現在の完了率 */}
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-medium text-[#1F1F1F] mb-4">{t("progress.chart2_title")}</h2>
+        <div className="rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none">
+          <h2 className="text-sm font-medium text-on-surface mb-4">{t("progress.chart2_title")}</h2>
           {chart2Data.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-xs text-[#747775] italic">
+            <div className="h-64 flex items-center justify-center text-xs text-on-surface-variant italic">
               {t("progress.empty_tasks")}
             </div>
           ) : (
@@ -200,7 +200,7 @@ export default function ProgressPage() {
                   <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#444746" }} unit="%" />
                   <YAxis dataKey="role" type="category" tick={{ fontSize: 11, fill: "#1F1F1F" }} width={80} />
                   <Tooltip formatter={(value: any) => [`${value}%`, lang === "en" ? "Rate" : "完了率"]} />
-                  <Bar dataKey="rate" fill="#0B57D0" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="rate" fill="var(--md-sys-color-primary, #0B57D0)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -208,10 +208,10 @@ export default function ProgressPage() {
         </div>
 
         {/* ③ 役職別の期限切れ NA 数 */}
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-medium text-[#1F1F1F] mb-4">{t("progress.chart3_title")}</h2>
+        <div className="rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none">
+          <h2 className="text-sm font-medium text-on-surface mb-4">{t("progress.chart3_title")}</h2>
           {chart3Data.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-xs text-[#747775] italic">
+            <div className="h-64 flex items-center justify-center text-xs text-on-surface-variant italic">
               {t("progress.empty_overdue")}
             </div>
           ) : (
@@ -222,7 +222,7 @@ export default function ProgressPage() {
                   <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: "#444746" }} />
                   <YAxis dataKey="role" type="category" tick={{ fontSize: 11, fill: "#1F1F1F" }} width={80} />
                   <Tooltip formatter={(value: any) => [`${value}件`, lang === "en" ? "Overdue" : "期限切れNA"]} />
-                  <Bar dataKey="overdue" fill="#B3261E" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="overdue" fill="var(--md-sys-color-error, #B3261E)" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -230,10 +230,10 @@ export default function ProgressPage() {
         </div>
 
         {/* ④ メンバー別の自動負荷推移 */}
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs">
-          <h2 className="text-sm font-medium text-[#1F1F1F] mb-4">{t("progress.chart4_title")}</h2>
+        <div className="rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none">
+          <h2 className="text-sm font-medium text-on-surface mb-4">{t("progress.chart4_title")}</h2>
           {chart4Data.length === 0 ? (
-            <div className="h-64 flex items-center justify-center text-xs text-[#747775] italic">
+            <div className="h-64 flex items-center justify-center text-xs text-on-surface-variant italic">
               {t("progress.empty_snaps")}
             </div>
           ) : (

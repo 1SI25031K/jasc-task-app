@@ -3,45 +3,85 @@
 import React, { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useDashboard } from "@/context/DashboardContext";
+import { useSnackbar } from "@/context/SnackbarContext";
 import { Avatar } from "./Avatar";
 import { MaterialIcon } from "./MaterialIcon";
 import { signOut } from "next-auth/react";
 import { updateMemberSettingsAction } from "@/app/actions/settings";
+import { BingWallpaperInfo } from "@/lib/bing";
 
 interface TopBarProps {
   onMenuClick?: () => void;
+  bingWallpaper?: BingWallpaperInfo | null;
 }
 
-const BG_COLORS = [
-  { id: "standard", name: "標準", class: "bg-slate-100 border-slate-300" },
-  { id: "blue", name: "青", class: "bg-blue-100 border-blue-300" },
-  { id: "teal", name: "ティール", class: "bg-teal-100 border-teal-300" },
-  { id: "green", name: "緑", class: "bg-emerald-100 border-emerald-300" },
-  { id: "yellow", name: "黄", class: "bg-amber-100 border-amber-300" },
-  { id: "orange", name: "オレンジ", class: "bg-orange-100 border-orange-300" },
-  { id: "pink", name: "ピンク", class: "bg-pink-100 border-pink-300" },
-  { id: "purple", name: "紫", class: "bg-purple-100 border-purple-300" },
-  { id: "gray", name: "グレー", class: "bg-slate-200 border-slate-400" },
-];
+// 7.7 準拠の 9 色パレット
+export const BG_PALETTES: Record<string, { hex: string; nameJa: string; nameEn: string }> = {
+  standard: { hex: "#F0F4F9", nameJa: "標準", nameEn: "Standard" },
+  blue: { hex: "#E8F0FE", nameJa: "ブルー", nameEn: "Blue" },
+  teal: { hex: "#E0F2F1", nameJa: "ティール", nameEn: "Teal" },
+  green: { hex: "#E6F4EA", nameJa: "グリーン", nameEn: "Green" },
+  yellow: { hex: "#FEF7E0", nameJa: "イエロー", nameEn: "Yellow" },
+  orange: { hex: "#FEEFE3", nameJa: "オレンジ", nameEn: "Orange" },
+  pink: { hex: "#FCE8F0", nameJa: "ピンク", nameEn: "Pink" },
+  purple: { hex: "#F3E8FD", nameJa: "パープル", nameEn: "Purple" },
+  gray: { hex: "#F1F3F4", nameJa: "グレー", nameEn: "Gray" },
+};
 
-export function TopBar({ onMenuClick }: TopBarProps) {
+export function TopBar({ onMenuClick, bingWallpaper }: TopBarProps) {
   const { currentMember, lang, setLang, userEmail, isRefreshing, refresh, t } = useDashboard();
+  const { showSnackbar } = useSnackbar();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [bgOpen, setBgOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
+
   const menuRef = useRef<HTMLDivElement>(null);
+  const helpRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
 
   // 外側クリックでメニューを閉じる
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (menuRef.current && !menuRef.current.contains(target)) {
         setUserMenuOpen(false);
+      }
+      if (helpRef.current && !helpRef.current.contains(target)) {
         setHelpOpen(false);
+      }
+      if (bgRef.current && !bgRef.current.contains(target)) {
+        setBgOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // タブ復帰時（60秒以上経過時）および5分間隔での自動データ更新（作業1-7: 更新ボタン廃止に伴う自動化）
+  useEffect(() => {
+    let lastFetched = Date.now();
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        if (Date.now() - lastFetched > 60 * 1000) {
+          lastFetched = Date.now();
+          refresh();
+        }
+      }
+    };
+
+    const intervalTimer = setInterval(() => {
+      lastFetched = Date.now();
+      refresh();
+    }, 5 * 60 * 1000);
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      clearInterval(intervalTimer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [refresh]);
 
   const displayName =
     lang === "en" && currentMember.displayNameEn
@@ -52,70 +92,80 @@ export function TopBar({ onMenuClick }: TopBarProps) {
     setLang(newLang);
     startTransition(async () => {
       await updateMemberSettingsAction({ lang: newLang });
+      showSnackbar({ message: newLang === "en" ? "Language updated to English" : "表示言語を日本語に切り替えました" });
     });
   };
 
-  const handleBgChange = (bgMode: string, bgColor: string) => {
+  const handleBgColorSelect = (colorKey: string) => {
+    const newMode = colorKey === "standard" ? "standard" : "color";
     startTransition(async () => {
-      await updateMemberSettingsAction({ bgMode, bgColor });
+      await updateMemberSettingsAction({ bgMode: newMode, bgColor: colorKey });
       await refresh();
+      showSnackbar({ message: lang === "en" ? "Background updated" : "背景設定を保存しました" });
     });
   };
+
+  const handleBingToggle = (enabled: boolean) => {
+    const newMode = enabled ? "bing" : currentMember.bgColor && currentMember.bgColor !== "standard" ? "color" : "standard";
+    startTransition(async () => {
+      await updateMemberSettingsAction({ bgMode: newMode, bgColor: currentMember.bgColor || "standard" });
+      await refresh();
+      showSnackbar({
+        message: enabled
+          ? lang === "en"
+            ? "Bing Today's Wallpaper applied"
+            : "「今日の景色（Bing）」を背景に適用しました"
+          : lang === "en"
+          ? "Wallpaper reset to selected color"
+          : "背景色に戻しました",
+      });
+    });
+  };
+
+  const isBing = currentMember.bgMode === "bing";
+  const activeColorKey = currentMember.bgColor || "standard";
 
   return (
-    <header className="sticky top-0 z-40 h-16 w-full bg-white border-b border-[#C4C7C5]/40">
+    <header className="sticky top-0 z-40 h-16 w-full bg-surface">
       <div className="flex h-full w-full items-center justify-between px-4 sm:px-6">
-        {/* 左: ハンバーガー（タブレット・モバイル）＋ タイトル */}
+        {/* 左: ハンバーガー（モバイル）＋ アプリ名 */}
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuClick}
             aria-label="ナビゲーションメニューを開く"
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] active:bg-[#ECE6F0] md:hidden transition"
+            className="m3-interactive flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface md:hidden transition"
           >
-            <MaterialIcon name="menu" className="text-2xl" />
+            <MaterialIcon name="menu" size={24} />
           </button>
 
-          <Link href="/" className="flex items-center gap-2 group">
-            <span className="text-lg font-medium text-[#1F1F1F] tracking-tight">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="text-[22px] font-normal text-on-surface tracking-tight">
               {t("app.title")}
             </span>
           </Link>
         </div>
 
-        {/* 右: 操作アイコン群 */}
-        <div className="flex items-center gap-1 sm:gap-2" ref={menuRef}>
-          {/* データ更新ボタン */}
-          <button
-            onClick={refresh}
-            disabled={isRefreshing || isPending}
-            title={lang === "en" ? "Refresh data" : "最新データに更新"}
-            aria-label={lang === "en" ? "Refresh data" : "最新データに更新"}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] hover:text-[#1F1F1F] active:bg-[#ECE6F0] disabled:opacity-50 transition"
-          >
-            <MaterialIcon
-              name="refresh"
-              className={`text-xl ${isRefreshing || isPending ? "animate-spin text-[#0B57D0]" : ""}`}
-            />
-          </button>
-
+        {/* 右: 操作アイコン群（ヘルプ・背景設定・アバター） */}
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* ヘルプボタン */}
-          <div className="relative">
+          <div className="relative" ref={helpRef}>
             <button
               onClick={() => {
                 setHelpOpen(!helpOpen);
                 setUserMenuOpen(false);
+                setBgOpen(false);
               }}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] hover:text-[#1F1F1F] active:bg-[#ECE6F0] transition"
+              className="m3-interactive flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition"
               title={t("app.help_title")}
               aria-label={t("app.help_title")}
             >
-              <MaterialIcon name="help_outline" className="text-xl" />
+              <MaterialIcon name="help_outline" size={22} />
             </button>
 
             {helpOpen && (
-              <div className="absolute right-0 mt-2 w-80 rounded-[16px] border border-[#C4C7C5]/40 bg-white p-4 shadow-lg z-50 text-sm">
-                <h3 className="font-medium text-[#1F1F1F] mb-2">{t("app.help_title")}</h3>
-                <div className="space-y-2 text-xs text-[#444746]">
+              <div className="absolute right-0 mt-2 w-80 rounded-m3-lg bg-surface-container-high p-4 shadow-xl z-50 text-sm border-none">
+                <h3 className="font-medium text-on-surface mb-2">{t("app.help_title")}</h3>
+                <div className="space-y-2 text-xs text-on-surface-variant">
                   <p>・<strong>ホーム</strong>：全体の状況サマリーとお知らせの確認</p>
                   <p>・<strong>役職ボード</strong>：全21役職の担当者・残タスク・NA進捗</p>
                   <p>・<strong>マイタスク</strong>：自分の担当タスクの確認</p>
@@ -127,106 +177,162 @@ export function TopBar({ onMenuClick }: TopBarProps) {
             )}
           </div>
 
+          {/* 背景設定ボタン（作業1-9: 7.7 準拠の wallpaper ポップオーバー） */}
+          <div className="relative" ref={bgRef}>
+            <button
+              onClick={() => {
+                setBgOpen(!bgOpen);
+                setUserMenuOpen(false);
+                setHelpOpen(false);
+              }}
+              className="m3-interactive flex h-10 w-10 items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface transition"
+              title={lang === "en" ? "Background Settings" : "背景の設定"}
+              aria-label={lang === "en" ? "Background Settings" : "背景の設定"}
+            >
+              <MaterialIcon name="wallpaper" size={22} />
+            </button>
+
+            {bgOpen && (
+              <div className="absolute right-0 mt-2 w-80 rounded-m3-lg bg-surface-container-high p-5 shadow-xl z-50 text-xs text-on-surface-variant border-none">
+                <h3 className="font-medium text-sm text-on-surface mb-3">
+                  {lang === "en" ? "Background" : "背景"}
+                </h3>
+
+                {/* 9色のカラーサークル（直径 32px） */}
+                <div className="grid grid-cols-5 gap-2.5 mb-4">
+                  {Object.entries(BG_PALETTES).map(([key, item]) => {
+                    const isSelected = !isBing && activeColorKey === key;
+                    return (
+                      <button
+                        key={key}
+                        onClick={() => handleBgColorSelect(key)}
+                        disabled={isPending}
+                        title={lang === "en" ? item.nameEn : item.nameJa}
+                        className={`h-8 w-8 rounded-full border border-black/10 flex items-center justify-center transition-all ${
+                          isSelected ? "ring-2 ring-primary ring-offset-2 scale-105" : "hover:scale-105"
+                        }`}
+                        style={{ backgroundColor: item.hex }}
+                      >
+                        {isSelected && <MaterialIcon name="check" size={16} className="text-primary" />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="h-px bg-outline-variant/30 my-3" />
+
+                {/* 今日の景色（Bing Wallpaper）スイッチ */}
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <span className="font-medium text-on-surface">
+                      {lang === "en" ? "Today's Scenery" : "今日の景色"}
+                    </span>
+                    <p className="text-[11px] text-on-surface-variant">
+                      {lang === "en" ? "Set Bing image of the day" : "Bing の今日の画像を背景にします"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isBing}
+                    onClick={() => handleBingToggle(!isBing)}
+                    disabled={isPending}
+                    className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                      isBing ? "bg-primary" : "bg-outline-variant"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                        isBing ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {isBing && !bingWallpaper && (
+                  <p className="mt-2 text-[11px] text-on-surface-variant italic">
+                    ※ {lang === "en" ? "Connecting to scenery service..." : "画像を取得中またはフォールバック中です"}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* ユーザーアバター＆ポップオーバーメニュー */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
               onClick={() => {
                 setUserMenuOpen(!userMenuOpen);
                 setHelpOpen(false);
+                setBgOpen(false);
               }}
               aria-label="アカウントメニューを開く"
-              className="flex items-center gap-2 rounded-full p-0.5 hover:ring-2 hover:ring-[#D3E3FD] transition"
+              className="flex items-center gap-2 rounded-full p-0.5 hover:ring-2 hover:ring-primary-container transition"
             >
               <Avatar name={displayName} memberId={currentMember.memberId} size={36} />
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-80 rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xl z-50">
+              <div className="absolute right-0 mt-2 w-80 rounded-m3-xl bg-surface-container-high p-5 shadow-2xl z-50 border-none">
                 {/* ユーザー情報 */}
-                <div className="flex items-center gap-3 border-b border-[#C4C7C5]/30 pb-4">
+                <div className="flex items-center gap-3 border-b border-outline-variant/30 pb-4">
                   <Avatar name={displayName} memberId={currentMember.memberId} size={48} />
                   <div className="overflow-hidden">
-                    <p className="truncate font-medium text-base text-[#1F1F1F]">{displayName}</p>
-                    <p className="truncate text-xs text-[#444746]">{userEmail}</p>
+                    <p className="truncate font-medium text-base text-on-surface">{displayName}</p>
+                    <p className="truncate text-xs text-on-surface-variant">{userEmail}</p>
                   </div>
                 </div>
 
                 {/* 言語切替 */}
-                <div className="py-4 border-b border-[#C4C7C5]/30">
-                  <p className="mb-2 text-xs font-medium text-[#444746] tracking-wider">
+                <div className="py-4 border-b border-outline-variant/30">
+                  <p className="mb-2 text-xs font-medium text-on-surface-variant tracking-wider">
                     {t("app.lang_label")}
                   </p>
-                  <div className="grid grid-cols-2 gap-1 rounded-full bg-[#F3EDF7] p-1 text-xs">
+                  <div className="grid grid-cols-2 gap-1 rounded-full bg-surface-container p-1 text-xs">
                     <button
                       onClick={() => handleLanguageChange("ja")}
                       className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 font-medium transition ${
-                        lang === "ja" ? "bg-white text-[#1F1F1F] shadow-sm" : "text-[#444746] hover:text-[#1F1F1F]"
+                        lang === "ja" ? "bg-surface-container-lowest text-on-surface shadow-xs" : "text-on-surface-variant hover:text-on-surface"
                       }`}
                     >
-                      {lang === "ja" && <MaterialIcon name="check" className="text-sm text-[#0B57D0]" />}
+                      {lang === "ja" && <MaterialIcon name="check" size={16} className="text-primary" />}
                       日本語
                     </button>
                     <button
                       onClick={() => handleLanguageChange("en")}
                       className={`flex items-center justify-center gap-1.5 rounded-full py-1.5 font-medium transition ${
-                        lang === "en" ? "bg-white text-[#1F1F1F] shadow-sm" : "text-[#444746] hover:text-[#1F1F1F]"
+                        lang === "en" ? "bg-surface-container-lowest text-on-surface shadow-xs" : "text-on-surface-variant hover:text-on-surface"
                       }`}
                     >
-                      {lang === "en" && <MaterialIcon name="check" className="text-sm text-[#0B57D0]" />}
+                      {lang === "en" && <MaterialIcon name="check" size={16} className="text-primary" />}
                       English
                     </button>
                   </div>
                 </div>
 
-                {/* 背景設定 */}
-                <div className="py-4 border-b border-[#C4C7C5]/30">
-                  <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-[#444746] tracking-wider">
-                    <MaterialIcon name="palette" className="text-sm" />
-                    <span>背景モード</span>
-                  </div>
-                  <div className="grid grid-cols-3 gap-1 rounded-full bg-[#F3EDF7] p-1 text-xs mb-3">
-                    {[
-                      { id: "standard", label: "標準" },
-                      { id: "color", label: "カラー" },
-                      { id: "bing", label: "Bing画像" },
-                    ].map((mode) => (
-                      <button
-                        key={mode.id}
-                        onClick={() => handleBgChange(mode.id, currentMember.bgColor || "standard")}
-                        className={`rounded-full py-1 text-center font-medium transition ${
-                          (currentMember.bgMode || "standard") === mode.id
-                            ? "bg-white text-[#1F1F1F] shadow-sm"
-                            : "text-[#444746] hover:text-[#1F1F1F]"
-                        }`}
-                      >
-                        {mode.label}
-                      </button>
-                    ))}
-                  </div>
-
-                  {currentMember.bgMode === "color" && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {BG_COLORS.map((c) => (
-                        <button
-                          key={c.id}
-                          title={c.name}
-                          onClick={() => handleBgChange("color", c.id)}
-                          className={`h-6 w-6 rounded-full border-2 transition ${c.class} ${
-                            (currentMember.bgColor || "standard") === c.id ? "ring-2 ring-[#0B57D0] scale-110" : ""
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
+                {/* 手動データ更新（上部バーから移設） */}
+                <div className="py-2 border-b border-outline-variant/30">
+                  <button
+                    onClick={() => {
+                      refresh();
+                      setUserMenuOpen(false);
+                      showSnackbar({ message: lang === "en" ? "Data refreshed" : "最新データに更新しました" });
+                    }}
+                    disabled={isRefreshing}
+                    className="m3-interactive flex w-full items-center gap-2.5 rounded-full px-3 py-2 text-xs font-medium text-on-surface hover:bg-white/8 transition"
+                  >
+                    <MaterialIcon name="refresh" size={18} className={isRefreshing ? "animate-spin text-primary" : ""} />
+                    <span>{lang === "en" ? "Refresh data" : "最新データに更新"}</span>
+                  </button>
                 </div>
 
                 {/* ログアウト */}
-                <div className="pt-3">
+                <div className="pt-2">
                   <button
                     onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm text-[#B3261E] hover:bg-[#F9DEDC]/50 transition"
+                    className="m3-interactive flex w-full items-center gap-2 rounded-full px-3 py-2 text-sm text-error hover:bg-error-container/40 transition"
                   >
-                    <MaterialIcon name="logout" className="text-base text-[#B3261E]" />
+                    <MaterialIcon name="logout" size={18} className="text-error" />
                     {t("app.logout_btn")}
                   </button>
                 </div>

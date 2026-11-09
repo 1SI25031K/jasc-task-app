@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { fetchDashboardData } from "@/lib/data";
 import { verifyMemberAccess } from "@/lib/auth-helpers";
 import { DashboardProvider } from "@/context/DashboardContext";
+import { SnackbarProvider } from "@/context/SnackbarContext";
 import { AppShell } from "@/components/AppShell";
 import { MaterialIcon } from "@/components/MaterialIcon";
 
@@ -22,11 +23,11 @@ export default async function DashboardLayout({
     dashboardData = await fetchDashboardData();
   } catch (err: any) {
     return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-[#F8F9FA]">
-        <div className="max-w-md rounded-[28px] border border-[#C4C7C5]/40 bg-white p-6 text-center text-[#1F1F1F] shadow-sm">
-          <MaterialIcon name="error_outline" className="mx-auto text-4xl text-[#B3261E] mb-2" />
+      <div className="flex min-h-screen items-center justify-center p-4 bg-surface">
+        <div className="max-w-md rounded-m3-xl bg-surface-container-lowest p-6 text-center text-on-surface shadow-sm">
+          <MaterialIcon name="error_outline" size={40} className="mx-auto text-error mb-2" />
           <h2 className="font-medium text-lg">データの読み込みに失敗しました</h2>
-          <p className="mt-2 text-sm text-[#444746]">{err?.message || "Google Sheets API エラー"}</p>
+          <p className="mt-2 text-sm text-on-surface-variant">{err?.message || "Google Sheets API エラー"}</p>
         </div>
       </div>
     );
@@ -46,7 +47,9 @@ export default async function DashboardLayout({
 
   return (
     <DashboardProvider initialData={dashboardData} userEmail={userEmail}>
-      <AppShell>{children}</AppShell>
+      <SnackbarProvider>
+        <AppShell>{children}</AppShell>
+      </SnackbarProvider>
     </DashboardProvider>
   );
 }

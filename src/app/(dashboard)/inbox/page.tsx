@@ -2,14 +2,17 @@
 
 import React, { useState, useTransition } from "react";
 import { useDashboard } from "@/context/DashboardContext";
+import { useSnackbar } from "@/context/SnackbarContext";
 import { TaskCard } from "@/components/TaskCard";
 import { parseFuzzyDate } from "@/lib/time";
 import { MaterialIcon } from "@/components/MaterialIcon";
+import { M3Dialog } from "@/components/M3Dialog";
 import { acceptTaskAction, consultTaskAction } from "@/app/actions/tasks";
 import { Task } from "@/lib/schemas";
 
 export default function InboxPage() {
   const { data, currentMember, lang, t, refresh } = useDashboard();
+  const { showSnackbar } = useSnackbar();
   const [activeTab, setActiveTab] = useState<"to_me" | "from_me" | "all">("to_me");
 
   // アクション実行状態
@@ -101,6 +104,7 @@ export default function InboxPage() {
 
       setActiveTaskId(null);
       if (res.success) {
+        showSnackbar({ message: "依頼を承諾しました" });
         await refresh();
       } else {
         setErrorMessage(res.error || "承諾の処理に失敗しました。");
@@ -134,6 +138,7 @@ export default function InboxPage() {
 
       setActiveTaskId(null);
       if (res.success) {
+        showSnackbar({ message: "相談コメントを送信しました" });
         setConsultModalTask(null);
         setConsultComment("");
         await refresh();
@@ -152,24 +157,24 @@ export default function InboxPage() {
     <div className="space-y-6">
       {/* ページタイトル */}
       <div>
-        <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">{t("inbox.title")}</h1>
-        <p className="mt-1 text-sm text-[#444746]">{t("inbox.subtitle")}</p>
+        <h1 className="text-2xl font-normal tracking-tight text-on-surface">{t("inbox.title")}</h1>
+        <p className="mt-1 text-sm text-on-surface-variant">{t("inbox.subtitle")}</p>
       </div>
 
-      {/* エラー・楽観的ロック警告バナー */}
+      {/* エラー・楽観的ロック警告バナー（S7・エラーは消さずに常時表示） */}
       {errorMessage && (
-        <div className="rounded-[28px] border border-[#B3261E]/40 bg-[#F9DEDC] p-4 text-sm text-[#410E0B] flex items-start justify-between gap-3 shadow-xs">
+        <div className="rounded-[28px] bg-error-container p-4 text-sm text-on-error-container flex items-start justify-between gap-3 shadow-none">
           <div className="flex items-start gap-2.5">
-            <MaterialIcon name="error_outline" className="text-xl text-[#B3261E] shrink-0 mt-0.5" />
+            <MaterialIcon name="error_outline" className="text-xl text-error shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">{conflictOccurred ? "他の更新と競合しました（S7）" : "エラーが発生しました"}</p>
-              <p className="mt-0.5 text-xs text-[#410E0B]">{errorMessage}</p>
+              <p className="mt-0.5 text-xs text-on-error-container">{errorMessage}</p>
             </div>
           </div>
           {conflictOccurred && (
             <button
               onClick={refresh}
-              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[#B3261E] text-xs font-medium text-white shadow-xs hover:bg-[#B3261E]/90 transition"
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-error text-xs font-medium text-on-error hover:bg-error/90 transition m3-interactive"
             >
               <MaterialIcon name="refresh" className="text-sm" />
               最新に再読み込み
@@ -179,17 +184,17 @@ export default function InboxPage() {
       )}
 
       {/* M3 Primary Tabs */}
-      <div className="flex border-b border-[#C4C7C5]/40 space-x-2 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-outline-variant/30 space-x-2 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 ${
+              className={`flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 m3-interactive ${
                 isSelected
-                  ? "border-[#0B57D0] text-[#0B57D0]"
-                  : "border-transparent text-[#444746] hover:text-[#1F1F1F]"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface"
               }`}
             >
               <MaterialIcon name={tab.icon} className="text-base" />
@@ -201,11 +206,11 @@ export default function InboxPage() {
 
       {/* タスク一覧（M3 List） */}
       {currentTasks.length === 0 ? (
-        <div className="rounded-[16px] border border-dashed border-[#C4C7C5] p-12 text-center text-sm text-[#747775]">
+        <div className="rounded-[16px] border border-dashed border-outline-variant p-12 text-center text-sm text-on-surface-variant">
           {t("inbox.empty_inbox")}
         </div>
       ) : (
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white overflow-hidden shadow-xs divide-y divide-[#C4C7C5]/30">
+        <div className="rounded-[28px] bg-surface-container-lowest overflow-hidden border-none shadow-none divide-y divide-outline-variant/20">
           {currentTasks.map((task) => {
             const isTargetToMe =
               activeTab === "to_me" &&
@@ -216,7 +221,7 @@ export default function InboxPage() {
             const isProcessingThis = isPending && activeTaskId === task.taskId;
 
             return (
-              <div key={task.taskId} className="bg-white">
+              <div key={task.taskId} className="bg-surface-container-lowest">
                 <TaskCard
                   task={task}
                   members={data.members}
@@ -226,15 +231,15 @@ export default function InboxPage() {
 
                 {/* 自分宛ての「依頼中」タスクに対する承諾・相談アクションバー */}
                 {isTargetToMe && (
-                  <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F9FA] px-4 py-3 text-xs border-t border-[#C4C7C5]/20">
-                    <div className="text-[#1F1F1F]">
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-surface-container px-4 py-3 text-xs border-t border-outline-variant/20">
+                    <div className="text-on-surface">
                       <strong>{reqName}</strong> さんからあなたへのタスク依頼です。内容を確認して返答してください。
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleAccept(task)}
                         disabled={isPending}
-                        className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-[#0B57D0] text-xs font-medium text-white hover:bg-[#0B57D0]/90 disabled:opacity-50 transition"
+                        className="inline-flex items-center gap-1.5 h-8 px-4 rounded-full bg-primary text-xs font-medium text-on-primary hover:bg-primary/90 disabled:opacity-50 transition m3-interactive"
                       >
                         {isProcessingThis ? (
                           <MaterialIcon name="refresh" className="text-sm animate-spin" />
@@ -251,9 +256,9 @@ export default function InboxPage() {
                           setErrorMessage(null);
                         }}
                         disabled={isPending}
-                        className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full border border-[#747775] bg-white text-xs font-medium text-[#444746] hover:bg-[#F3EDF7] disabled:opacity-50 transition"
+                        className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full border border-outline-variant bg-surface-container-lowest text-xs font-medium text-on-surface-variant hover:bg-surface-container-high disabled:opacity-50 transition m3-interactive"
                       >
-                        <MaterialIcon name="chat_bubble_outline" className="text-sm text-[#747775]" />
+                        <MaterialIcon name="chat_bubble_outline" className="text-sm text-on-surface-variant" />
                         <span>相談したい</span>
                       </button>
                     </div>
@@ -267,55 +272,55 @@ export default function InboxPage() {
 
       {/* M3 相談ダイアログ */}
       {consultModalTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/40 p-4">
-          <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl border border-[#C4C7C5]/40">
-            <h3 className="text-lg font-medium text-[#1F1F1F]">
-              タスクの依頼について相談する
-            </h3>
-            <p className="mt-1 text-xs text-[#444746]">
-              依頼元の <strong>{memberMap.get(consultModalTask.requestedBy)?.displayName || consultModalTask.requestedBy}</strong> さんに送る相談理由や調整希望を入力してください（必須）。
-            </p>
+        <M3Dialog
+          isOpen={!!consultModalTask}
+          onClose={() => setConsultModalTask(null)}
+          title="タスクの依頼について相談する"
+          maxWidth="max-w-md"
+        >
+          <p className="mb-3 text-xs text-on-surface-variant">
+            依頼元の <strong>{memberMap.get(consultModalTask.requestedBy)?.displayName || consultModalTask.requestedBy}</strong> さんに送る相談理由や調整希望を入力してください（必須）。
+          </p>
 
-            <form onSubmit={handleConsultSubmit} className="mt-4 space-y-4">
-              <div>
-                <label className="block text-xs font-medium text-[#444746] mb-1.5">
-                  相談コメント <span className="text-[#B3261E]">*</span>
-                </label>
-                <textarea
-                  value={consultComment}
-                  onChange={(e) => setConsultComment(e.target.value)}
-                  rows={4}
-                  placeholder="例：テスト期間のため、着手を1週間遅らせていただくことは可能でしょうか？"
-                  className="w-full rounded-[12px] border border-[#747775] p-3 text-sm text-[#1F1F1F] placeholder:text-[#747775] focus:border-[#0B57D0] focus:outline-none focus:ring-1 focus:ring-[#0B57D0]"
-                  maxLength={200}
-                  required
-                />
-                <div className="mt-1 text-right text-[11px] text-[#747775]">
-                  {consultComment.length} / 200 文字
-                </div>
+          <form onSubmit={handleConsultSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-medium text-on-surface-variant mb-1.5">
+                相談コメント <span className="text-error">*</span>
+              </label>
+              <textarea
+                value={consultComment}
+                onChange={(e) => setConsultComment(e.target.value)}
+                rows={4}
+                placeholder="例：テスト期間のため、着手を1週間遅らせていただくことは可能でしょうか？"
+                className="w-full rounded-[12px] border border-outline-variant bg-surface-container-low p-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
+                maxLength={200}
+                required
+              />
+              <div className="mt-1 text-right text-[11px] text-on-surface-variant">
+                {consultComment.length} / 200 文字
               </div>
+            </div>
 
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#C4C7C5]/30">
-                <button
-                  type="button"
-                  onClick={() => setConsultModalTask(null)}
-                  disabled={isPending}
-                  className="h-9 px-4 rounded-full text-xs font-medium text-[#444746] hover:bg-[#F3EDF7] transition"
-                >
-                  キャンセル
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending || !consultComment.trim()}
-                  className="inline-flex items-center gap-1.5 h-9 px-5 rounded-full bg-[#0B57D0] text-xs font-medium text-white hover:bg-[#0B57D0]/90 disabled:opacity-50 transition"
-                >
-                  {isPending && <MaterialIcon name="refresh" className="text-sm animate-spin" />}
-                  <span>相談を送信</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/20">
+              <button
+                type="button"
+                onClick={() => setConsultModalTask(null)}
+                disabled={isPending}
+                className="h-9 px-4 rounded-full text-xs font-medium text-on-surface-variant hover:bg-surface-container-high transition m3-interactive"
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                disabled={isPending || !consultComment.trim()}
+                className="inline-flex items-center gap-1.5 h-9 px-5 rounded-full bg-primary text-xs font-medium text-on-primary hover:bg-primary/90 disabled:opacity-50 transition m3-interactive"
+              >
+                {isPending && <MaterialIcon name="refresh" className="text-sm animate-spin" />}
+                <span>相談を送信</span>
+              </button>
+            </div>
+          </form>
+        </M3Dialog>
       )}
     </div>
   );

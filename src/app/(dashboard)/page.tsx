@@ -55,17 +55,17 @@ export default function HomePage() {
 
       {/* 2. 挨拶と状況1行サマリー */}
       <div className="text-center mb-8">
-        <h1 className="text-2xl sm:text-3xl font-normal text-[#1F1F1F] tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-normal text-on-surface tracking-tight">
           {greetingText}
         </h1>
-        <p className="mt-2 text-sm sm:text-base text-[#444746] font-normal">
+        <p className="mt-2 text-sm sm:text-base text-on-surface-variant font-normal">
           {summaryText}
         </p>
       </div>
 
-      {/* 3. ピル型の大きな検索バー */}
+      {/* 3. M3 ピル型 Search bar (56px, 塗り surface-container-high, 枠線なし) */}
       <form onSubmit={handleSearch} className="relative mb-6">
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-[#444746] flex items-center">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant flex items-center pointer-events-none">
           <MaterialIcon name="search" className="text-2xl" />
         </div>
         <input
@@ -74,28 +74,28 @@ export default function HomePage() {
           onChange={(e) => setSearchInput(e.target.value)}
           placeholder={t("home.search_placeholder")}
           aria-label={t("home.search_placeholder")}
-          className="w-full h-12 rounded-full border border-[#747775] bg-white pl-12 pr-6 text-sm text-[#1F1F1F] placeholder:text-[#747775] focus:outline-none focus:border-[#0B57D0] focus:ring-2 focus:ring-[#D3E3FD] transition"
+          className="w-full h-14 rounded-full border-none bg-surface-container-high pl-12 pr-6 text-sm text-on-surface placeholder:text-on-surface-variant hover:bg-surface-container-highest focus:bg-surface-container-lowest focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition duration-short4"
         />
       </form>
 
-      {/* 4. M3 Assist Chips */}
+      {/* 4. M3 Assist Chips (高さ 32px, 角丸 8px, 1px outline-variant, タッチ範囲 48px) */}
       <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
         {actionChips.map((chip) => (
           <Link
             key={chip.href}
             href={chip.href}
-            className="flex items-center gap-2 h-8 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm font-medium text-[#1F1F1F] hover:bg-[#F3EDF7] active:bg-[#ECE6F0] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0B57D0] transition"
+            className="group relative flex items-center gap-2 h-8 rounded-[8px] border border-outline-variant bg-surface-container-lowest pl-2 pr-4 text-sm font-medium text-on-surface hover:bg-surface-container-high active:bg-surface-container-highest transition m3-interactive before:absolute before:-inset-2 before:content-['']"
           >
-            <MaterialIcon name={chip.icon} className="text-base text-[#444746]" />
+            <MaterialIcon name={chip.icon} className="text-[18px] text-primary" />
             <span>{chip.label}</span>
           </Link>
         ))}
       </div>
 
-      {/* 5. おすすめ・お知らせカード */}
+      {/* 5. おすすめ・お知らせカード (Level 0 flat, 枠線なし, 影なし, 角丸 28px) */}
       {alerts.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xs font-medium text-[#444746] tracking-wider px-1">
+          <h2 className="text-xs font-medium text-on-surface-variant tracking-wider px-1">
             {lang === "en" ? "ACTION ITEMS" : "要対応のお知らせ"}
           </h2>
 
@@ -103,16 +103,16 @@ export default function HomePage() {
             {alerts.map((alert) => (
               <div
                 key={alert.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs transition hover:border-[#747775]"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none transition"
               >
                 <div className="flex items-start gap-4">
                   <div
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
                       alert.type === "alerts"
-                        ? "bg-[#F9DEDC] text-[#B3261E]"
+                        ? "bg-error-container text-on-error-container"
                         : alert.type === "inbox"
-                        ? "bg-[#D3E3FD] text-[#0B57D0]"
-                        : "bg-[#E9DDFF] text-[#6B4FBB]"
+                        ? "bg-primary-container text-on-primary-container"
+                        : "bg-tertiary-container text-on-tertiary-container"
                     }`}
                   >
                     <MaterialIcon
@@ -127,24 +127,24 @@ export default function HomePage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-medium text-[#1F1F1F] text-base">{alert.title}</h3>
-                    <p className="mt-0.5 text-xs sm:text-sm text-[#444746]">{alert.desc}</p>
+                    <h3 className="font-medium text-on-surface text-base">{alert.title}</h3>
+                    <p className="mt-0.5 text-xs sm:text-sm text-on-surface-variant">{alert.desc}</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-end gap-2 shrink-0">
                   <button
                     onClick={() => dismissAlert(alert.id)}
-                    className="h-9 px-3 rounded-full text-xs font-medium text-[#444746] hover:bg-[#F3EDF7] active:bg-[#ECE6F0] transition"
+                    className="h-9 px-3 rounded-full text-xs font-medium text-on-surface-variant hover:bg-surface-container-high active:bg-surface-container-highest transition m3-interactive"
                   >
                     {t("home.dismiss_btn")}
                   </button>
                   <Link
                     href={alert.targetHref}
-                    className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-[#0B57D0] text-xs font-medium text-white hover:bg-[#0B57D0]/90 active:bg-[#041E49] transition shadow-xs"
+                    className="flex items-center gap-1.5 h-9 px-4 rounded-full bg-primary text-xs font-medium text-on-primary hover:bg-primary/90 transition m3-interactive"
                   >
                     <span>{t("home.open_btn")}</span>
-                    <MaterialIcon name="arrow_forward" className="text-sm text-white" />
+                    <MaterialIcon name="arrow_forward" className="text-sm text-on-primary" />
                   </Link>
                 </div>
               </div>

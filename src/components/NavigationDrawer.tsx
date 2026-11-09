@@ -46,14 +46,14 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
       label: t("nav.inbox"),
       icon: "inbox",
       badge: inboxCount > 0 ? inboxCount : undefined,
-      badgeColor: "bg-[#0B57D0] text-white",
+      badgeColor: "bg-primary text-on-primary",
     },
     {
       href: "/alerts",
       label: t("nav.alerts"),
       icon: "warning",
       badge: overdueCount > 0 ? overdueCount : undefined,
-      badgeColor: "bg-[#B3261E] text-white", // 赤はエラー・アラート限定
+      badgeColor: "bg-error-container text-on-error-container font-semibold", // M3 error-container
     },
     { href: "/all-tasks", label: t("nav.all_tasks"), icon: "format_list_bulleted" },
     { href: "/capacity", label: t("nav.capacity_map"), icon: "speed" },
@@ -77,20 +77,29 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
             key={item.href}
             href={item.href}
             onClick={onMobileClose}
-            className={`group relative flex items-center rounded-full transition-colors duration-150 ${
+            className={`m3-interactive group relative flex items-center rounded-full select-none overflow-hidden ${
               isRail
                 ? "flex-col justify-center py-2 px-1 text-center h-[64px]"
                 : "h-[56px] px-4 gap-3"
             } ${
               isActive
-                ? "bg-[#D3E3FD] text-[#041E49] font-medium"
-                : "text-[#444746] hover:bg-[#F3EDF7] hover:text-[#1F1F1F]"
+                ? "text-on-primary-container font-medium"
+                : "text-on-surface-variant hover:text-on-surface"
             }`}
           >
+            {/* Active Indicator: 中央から横に広がる M3 アニメーション */}
+            <span
+              className={`absolute inset-0 rounded-full bg-primary-container pointer-events-none transition-transform duration-300 ease-[cubic-bezier(0.05,0.7,0.1,1)] ${
+                isActive ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
+              }`}
+              style={{ transformOrigin: "center" }}
+              aria-hidden="true"
+            />
+
             {/* アイコン（28px 円形） */}
             <div
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors shrink-0 ${
-                isActive ? "bg-[#0B57D0] text-white" : ""
+              className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors duration-200 shrink-0 ${
+                isActive ? "bg-primary text-on-primary" : ""
               }`}
               style={
                 !isActive
@@ -101,13 +110,13 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
               <MaterialIcon
                 name={item.icon}
                 filled={isActive}
-                className="text-[20px]"
+                size={20}
               />
             </div>
 
             {/* ラベル */}
             <span
-              className={`truncate text-sm ${
+              className={`relative z-10 truncate text-sm ${
                 isRail ? "text-[11px] mt-1 font-normal" : "flex-1"
               }`}
             >
@@ -117,7 +126,7 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
             {/* バッジ */}
             {item.badge !== undefined && (
               <span
-                className={`flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold ${item.badgeColor} ${
+                className={`relative z-10 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold ${item.badgeColor} ${
                   isRail ? "absolute top-1 right-2" : "ml-auto"
                 }`}
               >
@@ -132,15 +141,15 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
 
   return (
     <>
-      {/* 1. PC: Permanent Navigation Drawer (>= 1240px: 280px) */}
-      <aside className="hidden xl:flex w-[280px] shrink-0 flex-col border-r border-[#C4C7C5]/40 bg-white">
+      {/* 1. PC: Permanent Navigation Drawer (>= 1240px: 280px, surface 背景、境界線・影なし) */}
+      <aside className="hidden xl:flex w-[280px] shrink-0 flex-col bg-surface">
         <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">
           {renderNavList(false)}
         </div>
       </aside>
 
-      {/* 2. Tablet: Navigation Rail (840px - 1239px: 80px) */}
-      <aside className="hidden md:flex xl:hidden w-[80px] shrink-0 flex-col border-r border-[#C4C7C5]/40 bg-white items-center">
+      {/* 2. Tablet: Navigation Rail (840px - 1239px: 80px, surface 背景、境界線・影なし) */}
+      <aside className="hidden md:flex xl:hidden w-[80px] shrink-0 flex-col bg-surface items-center">
         <div className="sticky top-16 h-[calc(100vh-64px)] overflow-y-auto w-full">
           {renderNavList(true)}
         </div>
@@ -151,15 +160,15 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
         <div className="fixed inset-0 z-50 md:hidden flex">
           {/* Scrim */}
           <div
-            className="fixed inset-0 bg-[#000000]/40 transition-opacity"
+            className="fixed inset-0 bg-scrim/32 transition-opacity"
             onClick={onMobileClose}
             aria-hidden="true"
           />
 
           {/* Drawer container */}
-          <div className="relative flex w-[280px] max-w-[80vw] flex-col bg-white shadow-xl">
-            <div className="flex h-16 items-center px-4 border-b border-[#C4C7C5]/30">
-              <span className="text-base font-semibold text-[#1F1F1F]">
+          <div className="relative flex w-[280px] max-w-[80vw] flex-col bg-surface-container-low shadow-xl">
+            <div className="flex h-16 items-center px-4">
+              <span className="text-base font-medium text-on-surface">
                 {t("app.title")}
               </span>
             </div>
@@ -172,4 +181,3 @@ export function NavigationDrawer({ mobileOpen, onMobileClose }: NavigationDrawer
     </>
   );
 }
-

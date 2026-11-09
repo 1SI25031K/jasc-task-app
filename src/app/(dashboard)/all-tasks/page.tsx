@@ -83,8 +83,8 @@ function AllTasksContent() {
       {/* ページタイトル */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">{t("all_tasks.title")}</h1>
-          <p className="mt-1 text-sm text-[#444746]">
+          <h1 className="text-2xl font-normal tracking-tight text-on-surface">{t("all_tasks.title")}</h1>
+          <p className="mt-1 text-sm text-on-surface-variant">
             {t("all_tasks.result_count", { count: filteredTasks.length })}
           </p>
         </div>
@@ -93,7 +93,7 @@ function AllTasksContent() {
         {(keyword || selectedRole || selectedOwner || selectedStatus || selectedAssignment || showArchived) && (
           <button
             onClick={resetFilters}
-            className="flex items-center gap-1.5 text-xs font-medium text-[#0B57D0] hover:underline"
+            className="flex items-center gap-1.5 text-xs font-medium text-primary hover:underline m3-interactive"
           >
             <MaterialIcon name="restart_alt" className="text-base" />
             <span>{lang === "en" ? "Reset filters" : "フィルターを解除"}</span>
@@ -101,11 +101,11 @@ function AllTasksContent() {
         )}
       </div>
 
-      {/* 検索・絞り込みパネル（M3 Outlined Card） */}
-      <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs space-y-4">
+      {/* 検索・絞り込みパネル（Level 0 flat, 角丸 28px, 枠線なし） */}
+      <div className="rounded-[28px] bg-surface-container-lowest p-5 border-none shadow-none space-y-4">
         {/* キーワード検索 */}
         <div className="relative">
-          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#444746] flex items-center">
+          <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant flex items-center pointer-events-none">
             <MaterialIcon name="search" className="text-xl" />
           </div>
           <input
@@ -113,7 +113,7 @@ function AllTasksContent() {
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
             placeholder={t("all_tasks.filter_keyword")}
-            className="w-full h-11 rounded-full border border-[#747775] bg-white pl-10 pr-4 text-sm text-[#1F1F1F] placeholder:text-[#747775] focus:border-[#0B57D0] focus:outline-none transition"
+            className="w-full h-11 rounded-full border-none bg-surface-container-high pl-10 pr-4 text-sm text-on-surface placeholder:text-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition"
           />
         </div>
 
@@ -121,11 +121,11 @@ function AllTasksContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 text-xs">
           {/* 役職 */}
           <div>
-            <label className="block text-[11px] font-medium text-[#444746] mb-1">{t("all_tasks.filter_role")}</label>
+            <label className="block text-[11px] font-medium text-on-surface-variant mb-1">{t("all_tasks.filter_role")}</label>
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
+              className="w-full h-9 rounded-[8px] border border-outline-variant bg-surface-container-low px-2.5 text-on-surface focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
             >
               <option value="">{t("common.all")}</option>
               {data.roles.filter((r) => r.active).map((r) => (
@@ -138,11 +138,11 @@ function AllTasksContent() {
 
           {/* 担当者 */}
           <div>
-            <label className="block text-[11px] font-medium text-[#444746] mb-1">{t("all_tasks.filter_owner")}</label>
+            <label className="block text-[11px] font-medium text-on-surface-variant mb-1">{t("all_tasks.filter_owner")}</label>
             <select
               value={selectedOwner}
               onChange={(e) => setSelectedOwner(e.target.value)}
-              className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
+              className="w-full h-9 rounded-[8px] border border-outline-variant bg-surface-container-low px-2.5 text-on-surface focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
             >
               <option value="">{t("common.all")}</option>
               {data.members.filter((m) => m.active).map((m) => (
@@ -155,11 +155,11 @@ function AllTasksContent() {
 
           {/* ステータス */}
           <div>
-            <label className="block text-[11px] font-medium text-[#444746] mb-1">{t("all_tasks.filter_status")}</label>
+            <label className="block text-[11px] font-medium text-on-surface-variant mb-1">{t("all_tasks.filter_status")}</label>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
+              className="w-full h-9 rounded-[8px] border border-outline-variant bg-surface-container-low px-2.5 text-on-surface focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
             >
               <option value="">{t("common.all")}</option>
               <option value="未着手">未着手</option>
@@ -171,11 +171,11 @@ function AllTasksContent() {
 
           {/* 依頼状態 */}
           <div>
-            <label className="block text-[11px] font-medium text-[#444746] mb-1">{t("all_tasks.filter_assignment")}</label>
+            <label className="block text-[11px] font-medium text-on-surface-variant mb-1">{t("all_tasks.filter_assignment")}</label>
             <select
               value={selectedAssignment}
               onChange={(e) => setSelectedAssignment(e.target.value)}
-              className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
+              className="w-full h-9 rounded-[8px] border border-outline-variant bg-surface-container-low px-2.5 text-on-surface focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
             >
               <option value="">{t("common.all")}</option>
               <option value="承諾済">承諾済</option>
@@ -186,11 +186,11 @@ function AllTasksContent() {
 
           {/* 並び順 */}
           <div>
-            <label className="block text-[11px] font-medium text-[#444746] mb-1">{lang === "en" ? "Sort" : "並び替え"}</label>
+            <label className="block text-[11px] font-medium text-on-surface-variant mb-1">{lang === "en" ? "Sort" : "並び替え"}</label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
-              className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
+              className="w-full h-9 rounded-[8px] border border-outline-variant bg-surface-container-low px-2.5 text-on-surface focus:border-primary focus:bg-surface-container-lowest focus:outline-none"
             >
               <option value="due_asc">{lang === "en" ? "Due Date (Asc)" : "NA期限が早い順"}</option>
               <option value="due_desc">{lang === "en" ? "Due Date (Desc)" : "NA期限が遅い順"}</option>
@@ -200,15 +200,15 @@ function AllTasksContent() {
         </div>
 
         {/* アーカイブ表示チェックボックス */}
-        <div className="flex items-center gap-2 pt-2 border-t border-[#C4C7C5]/30 text-xs">
+        <div className="flex items-center gap-2 pt-2 border-t border-outline-variant/20 text-xs">
           <input
             type="checkbox"
             id="showArchived"
             checked={showArchived}
             onChange={(e) => setShowArchived(e.target.checked)}
-            className="rounded text-[#0B57D0] focus:ring-[#0B57D0] h-4 w-4"
+            className="rounded text-primary focus:ring-primary h-4 w-4"
           />
-          <label htmlFor="showArchived" className="text-[#444746] cursor-pointer">
+          <label htmlFor="showArchived" className="text-on-surface-variant cursor-pointer">
             {t("all_tasks.filter_show_archived")}
           </label>
         </div>
@@ -216,11 +216,11 @@ function AllTasksContent() {
 
       {/* タスク一覧（M3 List） */}
       {filteredTasks.length === 0 ? (
-        <div className="rounded-[16px] border border-dashed border-[#C4C7C5] p-12 text-center text-sm text-[#747775]">
+        <div className="rounded-[16px] border border-dashed border-outline-variant p-12 text-center text-sm text-on-surface-variant">
           {t("alerts.empty_section")}
         </div>
       ) : (
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white overflow-hidden shadow-xs">
+        <div className="rounded-[28px] bg-surface-container-lowest border-none shadow-none overflow-hidden">
           {filteredTasks.map((task) => (
             <TaskCard
               key={task.taskId}
@@ -238,7 +238,16 @@ function AllTasksContent() {
 
 export default function AllTasksPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center text-[#747775]">読み込み中...</div>}>
+    <Suspense
+      fallback={
+        <div role="status" aria-busy="true" className="space-y-6">
+          <span className="sr-only">タスク一覧を読み込み中...</span>
+          <div className="h-8 w-44 rounded-full m3-shimmer" />
+          <div className="h-32 rounded-[28px] bg-surface-container-lowest m3-shimmer" />
+          <div className="h-64 rounded-[28px] bg-surface-container-lowest m3-shimmer" />
+        </div>
+      }
+    >
       <AllTasksContent />
     </Suspense>
   );

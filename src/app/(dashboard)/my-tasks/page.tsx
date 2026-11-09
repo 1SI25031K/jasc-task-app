@@ -77,36 +77,36 @@ export default function MyTasksPage() {
     <div className="space-y-6">
       {/* ページタイトル */}
       <div>
-        <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">{t("my_tasks.title")}</h1>
+        <h1 className="text-2xl font-normal tracking-tight text-on-surface">{t("my_tasks.title")}</h1>
       </div>
 
-      {/* 負荷サマリーカード */}
-      <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs flex flex-wrap items-center justify-between gap-4">
+      {/* 負荷サマリーカード: 白背景・角丸28px・枠線なし・影なし (M3 Level 0) */}
+      <div className="rounded-[28px] bg-surface-container-lowest p-5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <div>
-            <span className="text-xs font-medium text-[#747775] tracking-wider">
+            <span className="text-xs font-medium text-on-surface-variant tracking-wider">
               {lang === "en" ? "AUTO LOAD" : "現在の自動負荷"}
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
-              <span className="text-2xl font-normal text-[#1F1F1F]">{totalAutoPt}</span>
-              <span className="text-xs text-[#747775]">pt</span>
+              <span className="text-2xl font-normal text-on-surface">{totalAutoPt}</span>
+              <span className="text-xs text-on-surface-variant">pt</span>
             </div>
           </div>
 
-          <div className="h-8 w-px bg-[#C4C7C5]/40" />
+          <div className="h-8 w-px bg-outline-variant/40" />
 
           <div>
-            <span className="text-xs font-medium text-[#747775] tracking-wider">
+            <span className="text-xs font-medium text-on-surface-variant tracking-wider">
               {lang === "en" ? "LATEST CHECK-IN" : "直近の体感負荷"}
             </span>
             <div className="flex items-baseline gap-1 mt-0.5">
               {checkin ? (
                 <>
-                  <span className="text-2xl font-normal text-[#1F1F1F]">{checkin.score}</span>
-                  <span className="text-xs text-[#747775]">/ 10</span>
+                  <span className="text-2xl font-normal text-primary">{checkin.score}</span>
+                  <span className="text-xs text-on-surface-variant">/ 10</span>
                 </>
               ) : (
-                <span className="text-sm font-normal text-[#747775]">{lang === "en" ? "Unanswered" : "未回答"}</span>
+                <span className="text-sm font-normal text-on-surface-variant">{lang === "en" ? "Unanswered" : "未回答"}</span>
               )}
             </div>
           </div>
@@ -114,40 +114,40 @@ export default function MyTasksPage() {
 
         <Link
           href="/checkin"
-          className="h-9 px-4 rounded-full bg-white border border-[#747775] text-[#1F1F1F] hover:bg-[#F3EDF7] text-xs font-medium transition inline-flex items-center"
+          className="m3-interactive h-9 px-4 rounded-full bg-surface-container-lowest border border-outline text-on-surface hover:bg-surface-container-low text-xs font-medium transition inline-flex items-center"
         >
           {lang === "en" ? "Submit Check-in" : "体感負荷を回答する"}
         </Link>
       </div>
 
       {/* M3 Primary Tabs */}
-      <div className="flex border-b border-[#C4C7C5]/40 space-x-2 overflow-x-auto no-scrollbar">
+      <div className="flex border-b border-outline-variant/30 space-x-2 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 ${
+              className={`m3-interactive flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 ${
                 isSelected
-                  ? "border-[#0B57D0] text-[#0B57D0]"
-                  : "border-transparent text-[#444746] hover:text-[#1F1F1F]"
+                  ? "border-primary text-primary"
+                  : "border-transparent text-on-surface-variant hover:text-on-surface"
               }`}
             >
-              <MaterialIcon name={tab.icon} className="text-base" />
+              <MaterialIcon name={tab.icon} size={18} />
               <span>{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* タスクリスト（M3 List） */}
+      {/* タスクリスト（M3 List: 白背景・角丸28px・枠線なし・影なし・showOwner={false}） */}
       {currentTabTasks.length === 0 ? (
-        <div className="rounded-[16px] border border-dashed border-[#C4C7C5] p-12 text-center text-sm text-[#747775]">
+        <div className="rounded-[16px] border border-dashed border-outline-variant p-12 text-center text-sm text-on-surface-variant">
           {t("my_tasks.empty_tab")}
         </div>
       ) : (
-        <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white overflow-hidden shadow-xs">
+        <div className="rounded-[28px] bg-surface-container-lowest overflow-hidden">
           {currentTabTasks.map((task) => (
             <TaskCard
               key={task.taskId}
@@ -155,6 +155,7 @@ export default function MyTasksPage() {
               members={data.members}
               roles={data.roles}
               lang={lang}
+              showOwner={false}
             />
           ))}
         </div>

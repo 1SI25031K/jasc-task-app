@@ -6,16 +6,16 @@
 @tailwind utilities;
 
 :root {
-  /* Material Design 3 Color Tokens */
+  /* Material Design 3 Color Tokens (docs/ui_spec_m3.md 準拠) */
   --md-sys-color-primary: #0B57D0;
   --md-sys-color-on-primary: #FFFFFF;
   --md-sys-color-primary-container: #D3E3FD;
   --md-sys-color-on-primary-container: #041E49;
 
-  --md-sys-color-secondary: #00639B;
+  --md-sys-color-secondary: #475D92;
   --md-sys-color-on-secondary: #FFFFFF;
-  --md-sys-color-secondary-container: #C2E7FF;
-  --md-sys-color-on-secondary-container: #001D35;
+  --md-sys-color-secondary-container: #D8E2FF;
+  --md-sys-color-on-secondary-container: #001A41;
 
   --md-sys-color-tertiary: #146C2E;
   --md-sys-color-on-tertiary: #FFFFFF;
@@ -24,20 +24,21 @@
 
   --md-sys-color-error: #B3261E;
   --md-sys-color-on-error: #FFFFFF;
-  --md-sys-color-error-container: #F9DEDC;
-  --md-sys-color-on-error-container: #410E0B;
+  --md-sys-color-error-container: #FFDAD6;
+  --md-sys-color-on-error-container: #410002;
 
-  --md-sys-color-surface: #FFFFFF;
+  /* App Background / Surface (Google Account 共通背景色 #F0F4F9) */
+  --md-sys-color-surface: #F0F4F9;
   --md-sys-color-on-surface: #1F1F1F;
   --md-sys-color-on-surface-variant: #444746;
 
-  --md-sys-color-surface-dim: #DED8E1;
-  --md-sys-color-surface-bright: #FEF7FF;
+  --md-sys-color-surface-dim: #D9DFE6;
+  --md-sys-color-surface-bright: #F8F9FA;
   --md-sys-color-surface-container-lowest: #FFFFFF;
-  --md-sys-color-surface-container-low: #F7F2FA;
-  --md-sys-color-surface-container: #F3EDF7;
-  --md-sys-color-surface-container-high: #ECE6F0;
-  --md-sys-color-surface-container-highest: #E6E0E9;
+  --md-sys-color-surface-container-low: #F0F4F9;
+  --md-sys-color-surface-container: #E9EEF6;
+  --md-sys-color-surface-container-high: #E3E8EF;
+  --md-sys-color-surface-container-highest: #DDE3EA;
 
   --md-sys-color-outline: #747775;
   --md-sys-color-outline-variant: #C4C7C5;
@@ -48,9 +49,43 @@
   --md-sys-color-scrim: #000000;
   --md-sys-color-shadow: #000000;
 
-  /* App Background (Google Account style light gray) */
-  --background: #F8F9FA;
-  --foreground: #1F1F1F;
+  --background: var(--md-sys-color-surface);
+  --foreground: var(--md-sys-color-on-surface);
+
+  /* M3 Motion Easing Tokens */
+  --md-sys-motion-easing-standard: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-decelerate: cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accelerate: cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  /* M3 Motion Duration Tokens */
+  --md-sys-motion-duration-short1: 50ms;
+  --md-sys-motion-duration-short2: 100ms;
+  --md-sys-motion-duration-short3: 150ms;
+  --md-sys-motion-duration-short4: 200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1: 450ms;
+  --md-sys-motion-duration-long2: 500ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --md-sys-motion-duration-short1: 0ms;
+    --md-sys-motion-duration-short2: 0ms;
+    --md-sys-motion-duration-short3: 0ms;
+    --md-sys-motion-duration-short4: 0ms;
+    --md-sys-motion-duration-medium1: 0ms;
+    --md-sys-motion-duration-medium2: 0ms;
+    --md-sys-motion-duration-medium3: 0ms;
+    --md-sys-motion-duration-medium4: 0ms;
+    --md-sys-motion-duration-long1: 0ms;
+    --md-sys-motion-duration-long2: 0ms;
+  }
 }
 
 body {
@@ -60,6 +95,16 @@ body {
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+}
+
+/* フォーカスリングはキーボード操作（:focus-visible）時のみ表示 */
+:focus:not(:focus-visible) {
+  outline: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--md-sys-color-primary) !important;
+  outline-offset: 2px !important;
 }
 
 /* Material Symbols Rounded helper */
@@ -77,8 +122,157 @@ body {
   -webkit-font-feature-settings: 'liga';
   -webkit-font-smoothing: antialiased;
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  transition: font-variation-settings var(--md-sys-motion-duration-short4) var(--md-sys-motion-easing-standard);
 }
 
 .material-symbols-rounded.filled {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* M3 Interactive State Layer & Ripple Helper */
+.m3-interactive {
+  position: relative;
+  overflow: hidden;
+  transition: background-color var(--md-sys-motion-duration-short2) linear;
+}
+
+.m3-interactive::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--md-sys-motion-duration-short2) linear;
+  border-radius: inherit;
+}
+
+.m3-interactive:hover::before {
+  opacity: 0.08;
+}
+
+.m3-interactive:active::before {
+  opacity: 0.10;
+}
+
+/* Ripple effect */
+.m3-ripple-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.m3-ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  background-color: currentColor;
+  opacity: 0.12;
+  transform: scale(0);
+  animation: m3-ripple-expand var(--md-sys-motion-duration-long1) var(--md-sys-motion-easing-standard) forwards;
+}
+
+@keyframes m3-ripple-expand {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m3-ripple-wave {
+    display: none !important;
+  }
+  dialog.m3-dialog[open] .m3-dialog-surface {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .m3-page-enter {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .m3-shimmer::after {
+    animation: none !important;
+    display: none !important;
+  }
+}
+
+/* M3 Native Dialog styling */
+dialog.m3-dialog {
+  padding: 0;
+  border: none;
+  background: transparent;
+  max-width: 90vw;
+  outline: none;
+}
+
+dialog.m3-dialog::backdrop {
+  background-color: rgba(0, 0, 0, 0.32);
+  animation: m3-backdrop-fade-in var(--md-sys-motion-duration-medium1) linear forwards;
+}
+
+dialog.m3-dialog[open] .m3-dialog-surface {
+  animation: m3-dialog-enter var(--md-sys-motion-duration-medium4) var(--md-sys-motion-easing-emphasized-decelerate) forwards;
+}
+
+@keyframes m3-backdrop-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes m3-dialog-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Page fade-through transition (App Router template.tsx) */
+.m3-page-enter {
+  animation: m3-page-fade-through var(--md-sys-motion-duration-medium1) var(--md-sys-motion-easing-emphasized-decelerate) forwards;
+}
+
+@keyframes m3-page-fade-through {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Shimmer Skeleton animation */
+.m3-shimmer {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--md-sys-color-surface-container);
+}
+
+.m3-shimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  animation: m3-shimmer-sweep 1500ms linear infinite;
+}
+
+@keyframes m3-shimmer-sweep {
+  100% {
+    transform: translateX(100%);
+  }
 }

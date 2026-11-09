@@ -84,3 +84,4 @@ def scan_document_for_pii(text: str) -> ScanResult:
 
     is_safe = len(reasons) == 0
     return ScanResult(is_safe=is_safe, reasons=reasons)
+

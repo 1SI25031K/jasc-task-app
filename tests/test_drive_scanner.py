@@ -35,3 +35,4 @@ def test_scan_detects_sensitive_keywords():
     assert any("機密キーワード" in r for r in res.reasons)
     assert "選考結果" in str(res.reasons)
     assert "面接評価" in str(res.reasons)
+

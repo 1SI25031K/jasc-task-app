@@ -196,6 +196,7 @@
 | high_load_score | `8` | 体感負荷アラートのしきい値 |
 | high_load_consecutive | `2` | しきい値以上が何回続いたらアラートを出すか |
 | summary_channel_id | （空） | 毎朝のまとめ・週次まとめを投稿するチャンネル |
+| admin_channel_id | （空） | 管理者・セキュリティ警告用チャンネル（個人情報検知アラート等。空欄時は summary_channel_id へフォールバック） |
 | app_url | （空） | 通知に載せるアプリの URL |
 | feature_ai_search | `FALSE` | ホーム画面の AI 問い合わせ機能の有効化フラグ（TRUE/FALSE。本番課金有効化前は FALSE で安全にデプロイ可能） |
 | rate_limit_ai_search_per_minute | `5` | 1メンバーあたりの1分間 AI 検索呼び出し上限回数 |
@@ -358,15 +359,16 @@ Google Drive 専用フォルダ「AI共有」から Gemini File Search Store へ
 - **全体概要**:
   - Google Drive 内の専用フォルダ「AI共有」（`drive_ai_shared_folder_id`）に置かれた共有資料を、日次バッチ（`scripts/sync_drive_files.py`）で Gemini API のマネージド RAG「File Search Store」へ自動インデックス化。
   - F14（議事録 NA 抽出）および F20（ホーム AI 問い合わせ）において、タスクデータ（スプレッドシート）と共有資料（Drive）を横断して根拠を参照可能にする。
-- **認証とキーレス同期**:
-  - サービスアカウント（`task-app-run@...`）に Google Drive フォルダの「閲覧者（Viewer）」権限を付与（書き込み・削除権限は与えない）。
-  - GitHub Actions からの自動実行には Google Cloud Workload Identity Federation (WIF) を利用し、秘密鍵 JSON を GitHub に置かないキーレス認証を標準とする。
+- **アカウント・認証と権限分離**:
+  - **Drive フォルダの共有先**: GitHub Actions のバッチ実行用サービスアカウント **`task-app-bot@jasc79-task-app.iam.gserviceaccount.com`** に、専用フォルダ「AI共有」の **「閲覧者（Viewer）」** 権限を付与（書き込み・削除権限は与えない）。
+  - **Cloud Run（Web アプリ）**: Cloud Run 実行アカウント **`task-app-run@jasc79-task-app.iam.gserviceaccount.com`** は Google Drive を直接読み取る処理は行わず（ゼロ）、Gemini API の File Search ツール（`generativelanguage.googleapis.com`）を経由して回答を取得する。そのため Cloud Run への Drive 権限付与は不要。
+  - **安全な終了保証**: `feature_drive_file_search` が `FALSE` または `drive_ai_shared_folder_id` が未設定の場合、バッチは何も処理を行わず exit code 0（正常終了）で終了する。
 - **ドキュメント変換と同期**:
-  - Google ドキュメント・スライドは PDF に変換してエクスポートし、レイアウトとページ構造を忠実にインデックス化。
+  - Google ドキュメント・スライドは PDF またはプレーンテキストに変換してエクスポートし、レイアウトとページ構造を忠実にインデックス化。
   - フォルダから削除または移動されたファイルは、File Search Store からも即座に抹消。
 - **事前安全検査（ガードレール・S16）**:
   - ファイル取り込み前に本文を自動スキャンし、メールアドレス、電話番号、選考・健康・認証関連キーワード（選考結果、合格通知、面接評価、健康診断、病歴、暗証番号等）が検知された場合は、**File Search へのアップロードを直ちにブロック**。
-  - `drive_sync_logs` に理由を記録し、管理者に警告通知を送る。
+  - `drive_sync_logs` に理由を記録し、`admin_channel_id`（未設定時は `summary_channel_id`）へ Slack セキュリティ警告を送信する。
 - **出典の明示と画面上の明確な区別（S18）**:
   - 回答内でタスクと資料の根拠を視覚的に明確に区別して表示：
     - タスク根拠: `[TASK:T-001]`（M3 Primary チップ / クリックでタスク詳細を開く）

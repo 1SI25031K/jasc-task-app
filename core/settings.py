@@ -68,6 +68,7 @@ class AppSettings:
     high_load_score: int = 8
     high_load_consecutive: int = 2
     summary_channel_id: str = ""
+    admin_channel_id: str = ""
     app_url: str = ""
     feature_ai_search: str = "FALSE"
     rate_limit_ai_search_per_minute: int = 5
@@ -102,6 +103,7 @@ class AppSettings:
                 data.get("high_load_consecutive"), 2
             ),
             summary_channel_id=data.get("summary_channel_id", "").strip(),
+            admin_channel_id=data.get("admin_channel_id", "").strip(),
             app_url=data.get("app_url", "").strip(),
             feature_ai_search=data.get("feature_ai_search", "FALSE").strip().upper(),
             rate_limit_ai_search_per_minute=_parse_int(
@@ -139,6 +141,7 @@ class AppSettings:
             SettingRow("high_load_score", str(self.high_load_score)),
             SettingRow("high_load_consecutive", str(self.high_load_consecutive)),
             SettingRow("summary_channel_id", self.summary_channel_id),
+            SettingRow("admin_channel_id", self.admin_channel_id),
             SettingRow("app_url", self.app_url),
             SettingRow("feature_ai_search", self.feature_ai_search),
             SettingRow(

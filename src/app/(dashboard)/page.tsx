@@ -75,9 +75,9 @@ export default function HomePage() {
         if (json.fallback) {
           setAiDisabledNotice(
             json.message ||
-              (lang === "en"
-                ? "AI Search is currently in preparation. Showing keyword matches."
-                : "AI 検索機能は現在準備中です。通常のキーワード検索結果を表示しています。")
+            (lang === "en"
+              ? "AI Search is currently in preparation. Showing keyword matches."
+              : "AI 検索機能は現在準備中です。通常のキーワード検索結果を表示しています。")
           );
         } else if (json.error) {
           setAiError(json.error);
@@ -234,7 +234,7 @@ export default function HomePage() {
           placeholder={
             lang === "en"
               ? "Ask AI or search tasks (e.g. What are my tasks due this week?)"
-              : "AI に質問またはタスクを検索（例: 今週期限の私のタスクは？）"
+              : "AI に質問またはタスクを検索"
           }
           aria-label={t("home.search_placeholder")}
           className="w-full h-14 rounded-full border-none bg-surface-container-high pl-12 pr-24 text-sm text-on-surface placeholder:text-on-surface-variant hover:bg-surface-container-highest focus:bg-surface-container-lowest focus:outline-none focus-visible:ring-2 focus-visible:ring-primary transition duration-short4"
@@ -410,21 +410,20 @@ export default function HomePage() {
                   >
                     <div className="flex items-start gap-4">
                       <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
-                          alert.type === "alerts"
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${alert.type === "alerts"
                             ? "bg-error-container text-on-error-container"
                             : alert.type === "inbox"
-                            ? "bg-primary-container text-on-primary-container"
-                            : "bg-tertiary-container text-on-tertiary-container"
-                        }`}
+                              ? "bg-primary-container text-on-primary-container"
+                              : "bg-tertiary-container text-on-tertiary-container"
+                          }`}
                       >
                         <MaterialIcon
                           name={
                             alert.type === "alerts"
                               ? "warning"
                               : alert.type === "inbox"
-                              ? "inbox"
-                              : "mood"
+                                ? "inbox"
+                                : "mood"
                           }
                           className="text-xl"
                         />

@@ -17,7 +17,10 @@ def test_default_settings() -> None:
     assert cfg.high_load_score == 8
     assert cfg.high_load_consecutive == 2
     assert cfg.summary_channel_id == ""
+    assert cfg.admin_channel_id == ""
     assert cfg.app_url == ""
+    assert cfg.feature_drive_file_search == "FALSE"
+    assert cfg.drive_ai_shared_folder_id == ""
 
 
 def test_custom_settings_and_roundtrip() -> None:
@@ -33,7 +36,10 @@ def test_custom_settings_and_roundtrip() -> None:
         "high_load_score": "9",
         "high_load_consecutive": "3",
         "summary_channel_id": "C01234567",
+        "admin_channel_id": "C09876543",
         "app_url": "https://example.streamlit.app",
+        "feature_drive_file_search": "TRUE",
+        "drive_ai_shared_folder_id": "folder_abc_123",
     }
     cfg = AppSettings.from_dict(raw)
     assert cfg.checkin_weekdays == ["火", "木"]
@@ -46,7 +52,10 @@ def test_custom_settings_and_roundtrip() -> None:
     assert cfg.high_load_score == 9
     assert cfg.high_load_consecutive == 3
     assert cfg.summary_channel_id == "C01234567"
+    assert cfg.admin_channel_id == "C09876543"
     assert cfg.app_url == "https://example.streamlit.app"
+    assert cfg.feature_drive_file_search == "TRUE"
+    assert cfg.drive_ai_shared_folder_id == "folder_abc_123"
 
     rows = cfg.to_rows()
     assert isinstance(rows[0], SettingRow)

@@ -11,7 +11,8 @@ export async function updateMemberSettingsAction(params: {
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const { member } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
+    const spreadsheetId =
+      process.env.SPREADSHEET_ID || process.env.GOOGLE_SPREADSHEET_ID;
     if (!spreadsheetId) {
       throw new Error("SPREADSHEET_ID is not configured");
     }
@@ -27,3 +28,4 @@ export async function updateMemberSettingsAction(params: {
     };
   }
 }
+

@@ -67,9 +67,10 @@ export async function saveExtractedTasksAction(
 ): Promise<SaveExtractedTasksResult> {
   try {
     const auth = await requireActiveMember();
-    const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID;
+    const spreadsheetId =
+      process.env.SPREADSHEET_ID || process.env.GOOGLE_SPREADSHEET_ID;
     if (!spreadsheetId) {
-      return { success: false, error: "GOOGLE_SPREADSHEET_ID is not configured" };
+      return { success: false, error: "SPREADSHEET_ID is not configured" };
     }
 
     if (input.candidates.length === 0) {

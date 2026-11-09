@@ -56,13 +56,18 @@ export interface UpdateTaskInput {
  * タスクを新規作成する（F7 / S5 / S8）。
  * 担当者が自分以外の場合は自動的に「依頼中」ステータスになる（5.3）。
  */
+function getSpreadsheetId(): string {
+  const id = process.env.SPREADSHEET_ID || process.env.GOOGLE_SPREADSHEET_ID;
+  if (!id) {
+    throw new Error("SPREADSHEET_ID is not configured");
+  }
+  return id;
+}
+
 export async function createTaskAction(input: CreateTaskInput): Promise<ActionResult<Task>> {
   try {
     const { member } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const title = (input.title || "").trim();
     const nextAction = (input.nextAction || "").trim();
@@ -144,10 +149,7 @@ export async function quickUpdateNAAction(params: {
 }): Promise<ActionResult<Task>> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === params.taskId);
     if (!task) {
@@ -206,10 +208,7 @@ export async function quickUpdateNAAction(params: {
 export async function updateTaskAction(input: UpdateTaskInput): Promise<ActionResult<Task>> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === input.taskId);
     if (!task) {
@@ -299,10 +298,7 @@ export async function archiveTaskAction(params: {
 }): Promise<ActionResult<Task>> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === params.taskId);
     if (!task) {
@@ -353,10 +349,7 @@ export async function restoreTaskAction(params: {
 }): Promise<ActionResult<Task>> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === params.taskId);
     if (!task) {
@@ -407,10 +400,7 @@ export async function acceptTaskAction(params: {
 }): Promise<ActionResult> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === params.taskId);
     if (!task) {
@@ -453,10 +443,7 @@ export async function consultTaskAction(params: {
 }): Promise<ActionResult> {
   try {
     const { member, data } = await requireActiveMember();
-    const spreadsheetId = process.env.SPREADSHEET_ID;
-    if (!spreadsheetId) {
-      throw new Error("SPREADSHEET_ID is not configured");
-    }
+    const spreadsheetId = getSpreadsheetId();
 
     const task = data.tasks.find((t) => t.taskId === params.taskId);
     if (!task) {

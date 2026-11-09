@@ -1,16 +1,30 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useDashboard } from "@/context/DashboardContext";
 import { Avatar } from "./Avatar";
-import { RefreshCw, HelpCircle, Globe, LogOut, Check } from "lucide-react";
+import { RefreshCw, HelpCircle, LogOut, Check, Palette } from "lucide-react";
 import { signOut } from "next-auth/react";
+import { updateMemberSettingsAction } from "@/app/actions/settings";
+
+const BG_COLORS = [
+  { id: "standard", name: "標準", class: "bg-slate-100 border-slate-300" },
+  { id: "blue", name: "青", class: "bg-blue-100 border-blue-300" },
+  { id: "teal", name: "ティール", class: "bg-teal-100 border-teal-300" },
+  { id: "green", name: "緑", class: "bg-emerald-100 border-emerald-300" },
+  { id: "yellow", name: "黄", class: "bg-amber-100 border-amber-300" },
+  { id: "orange", name: "オレンジ", class: "bg-orange-100 border-orange-300" },
+  { id: "pink", name: "ピンク", class: "bg-pink-100 border-pink-300" },
+  { id: "purple", name: "紫", class: "bg-purple-100 border-purple-300" },
+  { id: "gray", name: "グレー", class: "bg-slate-200 border-slate-400" },
+];
 
 export function TopBar() {
   const { currentMember, lang, setLang, userEmail, isRefreshing, refresh, t } = useDashboard();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const menuRef = useRef<HTMLDivElement>(null);
 
   // 外側クリックでメニューを閉じる
@@ -25,7 +39,24 @@ export function TopBar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const displayName = lang === "en" && currentMember.displayNameEn ? currentMember.displayNameEn : currentMember.displayName;
+  const displayName =
+    lang === "en" && currentMember.displayNameEn
+      ? currentMember.displayNameEn
+      : currentMember.displayName;
+
+  const handleLanguageChange = (newLang: "ja" | "en") => {
+    setLang(newLang);
+    startTransition(async () => {
+      await updateMemberSettingsAction({ lang: newLang });
+    });
+  };
+
+  const handleBgChange = (bgMode: string, bgColor: string) => {
+    startTransition(async () => {
+      await updateMemberSettingsAction({ bgMode, bgColor });
+      await refresh();
+    });
+  };
 
   return (
     <header className="sticky top-0 z-40 h-16 w-full border-b border-slate-200 bg-white/95 backdrop-blur">
@@ -47,11 +78,11 @@ export function TopBar() {
           {/* データ更新ボタン */}
           <button
             onClick={refresh}
-            disabled={isRefreshing}
+            disabled={isRefreshing || isPending}
             title={lang === "en" ? "Refresh data" : "最新データに更新"}
             className="flex h-9 w-9 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800 disabled:opacity-50 transition"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin text-blue-600" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${isRefreshing || isPending ? "animate-spin text-blue-600" : ""}`} />
           </button>
 
           {/* ヘルプボタン */}
@@ -94,7 +125,7 @@ export function TopBar() {
             </button>
 
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50">
+              <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50">
                 {/* ユーザー情報 */}
                 <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
                   <Avatar name={displayName} memberId={currentMember.memberId} size={44} />
@@ -111,7 +142,7 @@ export function TopBar() {
                   </p>
                   <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1 text-xs">
                     <button
-                      onClick={() => setLang("ja")}
+                      onClick={() => handleLanguageChange("ja")}
                       className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 font-medium transition ${
                         lang === "ja" ? "bg-white text-slate-800 shadow-sm" : "text-slate-600 hover:text-slate-800"
                       }`}
@@ -120,7 +151,7 @@ export function TopBar() {
                       日本語
                     </button>
                     <button
-                      onClick={() => setLang("en")}
+                      onClick={() => handleLanguageChange("en")}
                       className={`flex items-center justify-center gap-1.5 rounded-md py-1.5 font-medium transition ${
                         lang === "en" ? "bg-white text-slate-800 shadow-sm" : "text-slate-600 hover:text-slate-800"
                       }`}
@@ -129,6 +160,48 @@ export function TopBar() {
                       English
                     </button>
                   </div>
+                </div>
+
+                {/* 背景設定（F11） */}
+                <div className="py-3 border-b border-slate-100">
+                  <div className="flex items-center gap-1.5 mb-2 text-xs font-medium text-slate-400 uppercase tracking-wider">
+                    <Palette className="h-3.5 w-3.5" />
+                    <span>背景モード</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1 text-xs mb-2">
+                    {[
+                      { id: "standard", label: "標準" },
+                      { id: "color", label: "カラー" },
+                      { id: "bing", label: "Bing画像" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        onClick={() => handleBgChange(mode.id, currentMember.bgColor || "standard")}
+                        className={`rounded-md py-1 text-center font-medium transition ${
+                          (currentMember.bgMode || "standard") === mode.id
+                            ? "bg-white text-slate-800 shadow-sm"
+                            : "text-slate-600 hover:text-slate-800"
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {currentMember.bgMode === "color" && (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {BG_COLORS.map((c) => (
+                        <button
+                          key={c.id}
+                          title={c.name}
+                          onClick={() => handleBgChange("color", c.id)}
+                          className={`h-6 w-6 rounded-full border-2 transition ${c.class} ${
+                            (currentMember.bgColor || "standard") === c.id ? "ring-2 ring-blue-500 scale-110" : ""
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* ログアウト */}
@@ -149,4 +222,3 @@ export function TopBar() {
     </header>
   );
 }
-

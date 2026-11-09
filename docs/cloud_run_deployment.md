@@ -1,6 +1,7 @@
 # Google Cloud Run デプロイ手順書（docs/cloud_run_deployment.md）
 
-「JASC EC ダッシュボード 移行仕様書」Phase 4 に基づき、Next.js 版ダッシュボードを Google Cloud Run（東京リージョン `asia-northeast1`）へデプロイする手順です。
+「JASC EC ダッシュボード 移行仕様書」および要件定義書（`docs/requirements.md`）に基づき、Next.js 版ダッシュボードを Google Cloud Run（東京リージョン `asia-northeast1`）へデプロイする手順です。
+本バージョンでは、Streamlit 版の全機能（タスク作成・編集・依頼・チェックイン・AI 抽出等の書き込み機能を含む）の完全な置き換えとして運用します。
 
 ---
 
@@ -13,77 +14,99 @@
      - **メモリ使用量**: 毎月 **360,000 GiB 秒** まで無料
    - 15名規模の EC 業務ダッシュボードであれば、完全無料枠内で収まります。
 2. **最高のセキュリティ（秘密鍵 JSON 不要・Secret Manager 連携）**:
-   - Cloud Run の実行サービスアカウントに直接 Google スプレッドシートの閲覧権限を付与できるため、**環境変数やコンテナ内にサービスアカウントの秘密鍵ファイル（JSON）を持たせる必要がありません**。
-   - OAuth クライアントシークレットや認証ハッシュ鍵は、Google Cloud Secret Manager で暗号化管理し、Cloud Run 起動時に安全に環境変数へマウントします。
+   - Cloud Run の実行サービスアカウントに直接 Google スプレッドシートの編集権限を付与できるため、**環境変数やコンテナ内にサービスアカウントの秘密鍵ファイル（JSON）を持たせる必要がありません**。
+   - OAuth クライアントシークレットや認証ハッシュ鍵、Gemini API キーは、Google Cloud Secret Manager で暗号化管理し、Cloud Run 起動時に安全に環境変数へマウントします。
 3. **高速起動**:
    - Streamlit のスリープ復帰（約30秒〜1分）と比べ、Next.js コンテナのコールドスタートは 2〜3 秒と極めて高速です。
 
 > [!IMPORTANT]
 > **請求先アカウント（Billing Account）の登録と予算アラートについて**
 > - Cloud Run の無料枠を利用する場合でも、GCP プロジェクトへの「請求先アカウント（クレジットカード等の支払い情報）」の紐付けが必須です。
-> - 万が一のアクセス急増や設定ミスによる意図しない課金を未然に防ぐため、後述の「**§6 予算アラートの設定**」を必ず実施してください。
+> - 万が一のアクセス急増や設定ミスによる意図しない課金を未然に防ぐため、後述の「**§7 予算アラートの設定**」を必ず実施してください。
 
 ---
 
-## 2. デプロイの前提準備
+## 2. 専用サービスアカウント（task-app-run）の作成と権限設定
 
-### ① gcloud CLI の確認
-ローカル端末で Google Cloud SDK が利用可能であることを確認します：
+Cloud Run 実行用として、新しい専用サービスアカウント `task-app-run` を作成します（秘密鍵 JSON ファイルは作成・ダウンロードしません）。
+
+### ① サービスアカウントの作成
 ```bash
-gcloud --version
-gcloud auth login
-gcloud config set project jasc79-task-app
+gcloud iam service-accounts create task-app-run \
+  --display-name="Cloud Run App Service Account" \
+  --description="Runtime service account for JASC EC Task Manager on Cloud Run"
+```
+- 作成されるアカウント名：`task-app-run@jasc79-task-app.iam.gserviceaccount.com`
+
+### ② デプロイを実行する管理者アカウントへの権限付与
+デプロイを実行するあなたの Google アカウントに対して、Cloud Run へのデプロイおよびサービスアカウントの借用（ActAs）に必要な権限を付与します：
+```bash
+# 1. task-app-run に対する Service Account User 権限をあなたのアカウントに付与
+gcloud iam service-accounts add-iam-policy-binding \
+  task-app-run@jasc79-task-app.iam.gserviceaccount.com \
+  --member="user:<あなたのGoogleアカウントメールアドレス>" \
+  --role="roles/iam.serviceAccountUser"
+
+# 2. プロジェクトに対する Cloud Run 管理者・ビルド権限の確認（すでにある場合は不要）
+gcloud projects add-iam-policy-binding jasc79-task-app \
+  --member="user:<あなたのGoogleアカウントメールアドレス>" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding jasc79-task-app \
+  --member="user:<あなたのGoogleアカウントメールアドレス>" \
+  --role="roles/artifactregistry.writer"
+
+gcloud projects add-iam-policy-binding jasc79-task-app \
+  --member="user:<あなたのGoogleアカウントメールアドレス>" \
+  --role="roles/cloudbuild.builds.editor"
 ```
 
-### ② 必要な API の有効化（初回のみ）
-```bash
-gcloud services enable \
-  run.googleapis.com \
-  cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com \
-  sheets.googleapis.com \
-  secretmanager.googleapis.com
-```
-
-### ③ 実行用サービスアカウントとスプレッドシート権限方針
-- **実行用サービスアカウント**:
-  Compute Engine の既定サービスアカウント（`PROJECT_NUMBER-compute@developer.gserviceaccount.com`）はデフォルトでプロジェクト全体の編集権限を持っているため使用せず、既存の専用サービスアカウント：
-  `task-app-bot@jasc79-task-app.iam.gserviceaccount.com`
-  を実行アカウントとして明示的に指定します。
-- **スプレッドシートの権限方針**:
-  - **方針：並行稼働中・本番運用後ともに「閲覧者（Viewer）」に固定**。
-  - **理由**：
-    本ダッシュボードは「完全読み取り専用」として設計されており、ダッシュボードからスプレッドシートへの書き込み処理は一切存在しません（タスク追加やチェックインは Google フォーム・シート側で入力）。
-    編集者権限を与えることは不要なセキュリティリスク（最小特権の原則違反）となるため、本番用スプレッドシートの共有設定で `task-app-bot@jasc79-task-app.iam.gserviceaccount.com` を **「閲覧者（Viewer）」** として共有します。
+### ③ スプレッドシートの権限設定
+- **本番用スプレッドシートへの共有**:
+  - `task-app-run@jasc79-task-app.iam.gserviceaccount.com` を **「編集者（Editor）」** として共有します（タスク作成・編集・依頼・チェックインの書き込みを行うため）。
+  - ※ 既存の `task-app-bot@jasc79-task-app.iam.gserviceaccount.com` は、GitHub Actions の毎朝の定時処理（日次集計・Slack 送信）専用として **「編集者（Editor）」のまま残します**。
 
 ---
 
-## 3. Secret Manager への機密情報登録
+## 3. Secret Manager への機密情報登録とアクセス権付与
 
-`AUTH_SECRET`（セッション暗号化鍵）および `AUTH_GOOGLE_SECRET`（Google OAuth クライアントシークレット）を Secret Manager に登録し、実行サービスアカウントにのみアクセス権を付与します。
+機密情報（`auth-secret`, `auth-google-secret`, `gemini-api-key`）を Secret Manager で管理し、実行アカウント `task-app-run` にのみ読み取り権限（`secretAccessor`）を付与します。
 
-### ① シークレットの作成と値の保存
+### ① シークレットの作成・登録（未登録の場合）
 ```bash
-# 1. AUTH_SECRET（ランダム32バイト文字列）を作成して保存
+# 1. Secret Manager API の有効化
+gcloud services enable secretmanager.googleapis.com
+
+# 2. シークレットの作成（すでに登録済みのものは再作成不要）
+# AUTH_SECRET（ランダム32バイト文字列）
 echo -n "$(openssl rand -base64 32)" | gcloud secrets create auth-secret \
   --replication-policy="automatic" \
   --data-file=-
 
-# 2. AUTH_GOOGLE_SECRET（Google OAuth クライアントシークレット）を作成して保存
+# AUTH_GOOGLE_SECRET（Google OAuth クライアントシークレット）
 echo -n "<Google OAuth クライアントシークレット>" | gcloud secrets create auth-google-secret \
+  --replication-policy="automatic" \
+  --data-file=-
+
+# GEMINI_API_KEY（Gemini API キー）
+echo -n "<Google AI Studio の API キー>" | gcloud secrets create gemini-api-key \
   --replication-policy="automatic" \
   --data-file=-
 ```
 
-### ② 実行サービスアカウントへの読み取り権限（Secret Accessor）付与
-実行サービスアカウント `task-app-bot` に対してのみ、これらのシークレットを読み取る権限を付与します：
+### ② 実行サービスアカウント（task-app-run）への権限付与
+実行サービスアカウント `task-app-run` に対してのみ、シークレットを読み取る権限を付与します：
 ```bash
 gcloud secrets add-iam-policy-binding auth-secret \
-  --member="serviceAccount:task-app-bot@jasc79-task-app.iam.gserviceaccount.com" \
+  --member="serviceAccount:task-app-run@jasc79-task-app.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
 gcloud secrets add-iam-policy-binding auth-google-secret \
-  --member="serviceAccount:task-app-bot@jasc79-task-app.iam.gserviceaccount.com" \
+  --member="serviceAccount:task-app-run@jasc79-task-app.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+
+gcloud secrets add-iam-policy-binding gemini-api-key \
+  --member="serviceAccount:task-app-run@jasc79-task-app.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 ```
 
@@ -100,12 +123,12 @@ gcloud run deploy jasc-task-app \
   --region asia-northeast1 \
   --platform managed \
   --allow-unauthenticated \
-  --service-account=task-app-bot@jasc79-task-app.iam.gserviceaccount.com \
+  --service-account=task-app-run@jasc79-task-app.iam.gserviceaccount.com \
   --min-instances 0 \
   --max-instances 2 \
   --memory 512Mi \
   --cpu 1 \
-  --set-secrets="AUTH_SECRET=auth-secret:latest,AUTH_GOOGLE_SECRET=auth-google-secret:latest" \
+  --set-secrets="AUTH_SECRET=auth-secret:latest,AUTH_GOOGLE_SECRET=auth-google-secret:latest,GEMINI_API_KEY=gemini-api-key:latest" \
   --set-env-vars SPREADSHEET_ID="<本番用スプレッドシートID>" \
   --set-env-vars AUTH_GOOGLE_ID="<Google OAuth クライアントID>" \
   --set-env-vars AUTH_TRUST_HOST="true"
@@ -113,7 +136,7 @@ gcloud run deploy jasc-task-app \
 
 > [!NOTE]
 > **アクセス制御とセキュリティについて**
-> - `--allow-unauthenticated` を指定していますが、インターネット全体に公開されるわけではありません。アプリケーション手前の Next.js Middleware および Auth.js により、Google ログイン認証と **`members` シート（`active=TRUE`）による厳格なアクセス制御** が常に適用されます（未登録アカウントや `active=FALSE` のユーザーは `/unauthorized` へ即座にリダイレクトされ閲覧できません）。
+> - `--allow-unauthenticated` を指定していますが、インターネット全体に公開されるわけではありません。Next.js Middleware および Auth.js により、Google ログイン認証と **`members` シート（`active=TRUE`）による厳格なアクセス制御** が常に適用されます（未登録アカウントや `active=FALSE` のユーザーは `/unauthorized` へ即座にリダイレクトされ閲覧・書き込みができません）。
 > - Auth.js v5 はコンテナ環境でプロキシヘッダーを自動信頼するために `AUTH_TRUST_HOST="true"` を必要とします。また、`x-forwarded-proto` および `x-forwarded-host` からベース URL を自動判定するため、旧仕様の `NEXTAUTH_URL` や `AUTH_URL` の環境変数の手動指定は不要です。
 
 ---
@@ -148,10 +171,11 @@ gcloud run deploy jasc-task-app \
 
 ---
 
-## 7. 並行稼働時の確認チェックリスト（パリティ確認）
+## 7. 並行稼働時の確認チェックリスト（読み取り ＋ 書き込み機能）
 
-Streamlit 版（現行）と Next.js 版（Cloud Run）を並行して開き、以下が完全に一致することを確認します。
+Streamlit 版（現行）と Next.js 版（Cloud Run）を並行して開き、以下が完全に動作することを確認します。
 
+### ① 読み取り・表示機能（パリティ確認）
 | 確認項目 | Streamlit 版（現行） | Next.js 版（新） | 一致確認 |
 |---|---|---|:---:|
 | ログイン制限 | members シートの active=TRUE のみ | members シートの active=TRUE のみ | [ ] |
@@ -164,3 +188,20 @@ Streamlit 版（現行）と Next.js 版（Cloud Run）を並行して開き、�
 | 余力マップの自動負荷 pt | 各メンバーの pt | 同左 | [ ] |
 | 余力マップのギャップ表示 | 差分4以上のメンバー | 同左 | [ ] |
 | 進捗グラフの完了率推移 | 完了率折れ線グラフ | 同左 | [ ] |
+
+### ② 書き込み・更新機能（新機能パリティ確認）
+| 確認項目 | 操作内容 | 期待結果 | 一致確認 |
+|---|---|---|:---:|
+| タスク新規作成（自分担当） | 自分を担当者にして作成 | `assignment_status=承諾済`, `requested_by=""`, activity_log に create 記録 | [ ] |
+| タスク新規作成（他人担当） | 他人を担当者にして作成 | `assignment_status=依頼中`, `requested_by=作成者`, activity_log に create 記録 | [ ] |
+| タスク全項目編集 | タイトル・重さ・期限等を変更 | シート即時反映, activity_log に update 記録 | [ ] |
+| NA 簡易更新 | NA・期限・ステータスのみ変更 | 2クリック以内で更新成功 | [ ] |
+| 楽観的ロック（S7） | 他タブで更新後に古い画面から保存 | 上書きされず「他の人が更新しました」警告 | [ ] |
+| アーカイブ／復元（S8） | タスクをアーカイブ・復元 | 物理削除されず `archived` フラグ更新, activity_log 記録 | [ ] |
+| 依頼の承諾（F17） | 依頼された本人が「承諾」 | `承諾済` に遷移, 依頼元に反映, activity_log 記録 | [ ] |
+| 依頼の相談（F17） | 依頼された本人が「相談」＋コメント | `相談中` に遷移, コメント保存, activity_log 記録 | [ ] |
+| 依頼の権限チェック | 担当者本人以外が承諾/相談を試行 | サーバー側で 403 拒否（ボタン非表示＋防御） | [ ] |
+| 体感負荷チェックイン（F16） | 1〜10 のスコアと一言メモ送信 | シート即時反映, 当該時点の自動負荷も保存 | [ ] |
+| チェックイン同日上書き（4.5） | 同じ日に再度チェックイン | 新規行追加されず同日行が最新値で上書き | [ ] |
+| 議事メモ NA 生成（F14） | メモ貼り付け → Gemini 候補抽出 | 個人情報マスキング後抽出, レート制限, 選択行の一括登録 | [ ] |
+| 言語・背景設定保存（F11） | アバターメニューから設定変更 | `members` シートの `lang`/`bg_mode`/`bg_color` に即時保存 | [ ] |

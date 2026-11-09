@@ -1,7 +1,7 @@
 import { google } from "googleapis";
 
-const READONLY_SCOPES = [
-  "https://www.googleapis.com/auth/spreadsheets.readonly",
+const GOOGLE_API_SCOPES = [
+  "https://www.googleapis.com/auth/spreadsheets",
   "https://www.googleapis.com/auth/calendar.readonly",
 ];
 
@@ -9,7 +9,7 @@ const READONLY_SCOPES = [
  * Google API 認証クライアントを取得する。
  * - 環境変数 GOOGLE_SERVICE_ACCOUNT_EMAIL & GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY がある場合: サービスアカウント認証
  * - ない場合 (Google Cloud Run 等の本番環境): デフォルトの IAM サービスアカウント (ADC) を自動利用
- * ※ 権限は readonly に厳格に限定
+ * ※ スプレッドシート読み書き（spreadsheets）＋カレンダー閲覧（calendar.readonly）
  */
 export function getGoogleAuth() {
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
@@ -25,13 +25,12 @@ export function getGoogleAuth() {
     return new google.auth.JWT({
       email: clientEmail,
       key: privateKey,
-      scopes: READONLY_SCOPES,
+      scopes: GOOGLE_API_SCOPES,
     });
   }
 
   // Cloud Run または ADC
   return new google.auth.GoogleAuth({
-    scopes: READONLY_SCOPES,
+    scopes: GOOGLE_API_SCOPES,
   });
 }
-

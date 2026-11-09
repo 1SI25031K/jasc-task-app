@@ -173,8 +173,12 @@ export default function MinutesPage() {
         </div>
       )}
 
-      {/* 議事メモ入力フォーム（Level 0 flat, radius 28px, 枠線なし） */}
-      <div className="rounded-[28px] bg-surface-container-lowest p-6 border-none shadow-none">
+      {/* 議事メモ入力フォーム（Level 0 flat, radius 28px, 枠線なし / AI解析中は流れるグラデーション境界光） */}
+      <div
+        className={`rounded-[28px] bg-surface-container-lowest p-6 border-none shadow-none transition-all ${
+          isExtracting ? "m3-ai-border-flow" : ""
+        }`}
+      >
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
             <label className="block text-xs font-medium text-on-surface-variant mb-1.5">
@@ -228,7 +232,7 @@ export default function MinutesPage() {
           >
             {isExtracting ? (
               <>
-                <MaterialIcon name="refresh" className="text-base animate-spin" />
+                <MaterialIcon name="auto_awesome" className="text-base animate-pulse" />
                 <span>
                   {lang === "en" ? "Extracting NAs..." : "AI が解析中..."}
                 </span>
@@ -245,8 +249,52 @@ export default function MinutesPage() {
         </div>
       </div>
 
-      {/* 抽出された NA 候補リスト */}
-      {candidates.length > 0 && (
+      {/* AI 解析中表示（Google Workspace AI 風グラデーションテキスト＆スケルトン3行） */}
+      {isExtracting && (
+        <div className="space-y-4">
+          <div className="rounded-[28px] bg-surface-container-lowest p-5 flex flex-col items-center justify-center text-center">
+            <div className="flex items-center gap-2 mb-1">
+              <MaterialIcon name="auto_awesome" className="text-xl text-primary animate-pulse" />
+              <span className="m3-ai-shimmer-text text-sm font-medium">
+                {lang === "en" ? "Generating NA candidates..." : "NA の候補を作成しています..."}
+              </span>
+            </div>
+            <p className="text-[11px] text-on-surface-variant">
+              {lang === "en"
+                ? "AI generates suggestions. Please review and verify before saving."
+                : "AI が候補を作ります。内容を確認してから登録してください。"}
+            </p>
+          </div>
+
+          {/* スケルトン行（3行） */}
+          <div className="space-y-3">
+            {[1, 2, 3].map((idx) => (
+              <div
+                key={idx}
+                className="rounded-[28px] bg-surface-container-lowest p-5 space-y-3"
+              >
+                <div className="flex items-center justify-between pb-3 border-b border-outline-variant/10">
+                  <div className="h-4 w-32 rounded-full m3-shimmer" />
+                  <div className="h-3 w-48 rounded-full m3-shimmer" />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                  <div className="h-9 rounded-[8px] m3-shimmer" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 抽出された NA 候補リスト（到着時にスタッガード表示） */}
+      {!isExtracting && candidates.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-normal text-on-surface">
@@ -270,7 +318,8 @@ export default function MinutesPage() {
               return (
                 <div
                   key={idx}
-                  className={`rounded-[28px] transition-all p-5 bg-surface-container-lowest border-none shadow-none ${
+                  style={{ "--stagger-delay": `${idx * 80}ms` } as React.CSSProperties}
+                  className={`m3-stagger-fade-in rounded-[28px] transition-all p-5 bg-surface-container-lowest border-none shadow-none ${
                     cand.included
                       ? "ring-1 ring-primary"
                       : "opacity-60"

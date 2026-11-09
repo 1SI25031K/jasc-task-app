@@ -198,6 +198,20 @@ body {
     animation: none !important;
     display: none !important;
   }
+  .m3-ai-border-flow::before {
+    animation: none !important;
+    background: var(--md-sys-color-secondary-container) !important;
+  }
+  .m3-ai-shimmer-text {
+    animation: none !important;
+    background: none !important;
+    color: var(--md-sys-color-primary) !important;
+  }
+  .m3-stagger-fade-in {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 /* M3 Native Dialog styling */
@@ -274,5 +288,80 @@ dialog.m3-dialog[open] .m3-dialog-surface {
 @keyframes m3-shimmer-sweep {
   100% {
     transform: translateX(100%);
+  }
+}
+
+/* AI Generating Flowing Border (Google Workspace AI 表現) */
+.m3-ai-border-flow {
+  position: relative;
+  border-radius: 28px;
+  isolation: isolate;
+}
+
+.m3-ai-border-flow::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 30px;
+  background: linear-gradient(
+    90deg,
+    #0b57d0 0%,
+    #6b4fbb 35%,
+    #d3e3fd 50%,
+    #9c2a5c 70%,
+    #0b57d0 100%
+  );
+  background-size: 300% 100%;
+  animation: m3-border-gradient-flow 4s linear infinite;
+  z-index: -1;
+}
+
+@keyframes m3-border-gradient-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+/* AI Shimmer Text */
+.m3-ai-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #0b57d0 0%,
+    #6b4fbb 25%,
+    #9c2a5c 50%,
+    #6b4fbb 75%,
+    #0b57d0 100%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: m3-text-shimmer 2.8s linear infinite;
+}
+
+@keyframes m3-text-shimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Candidate staggered fade-in arrival */
+.m3-stagger-fade-in {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: m3-stagger-appear 350ms cubic-bezier(0.05, 0.7, 0.1, 1) forwards;
+  animation-delay: var(--stagger-delay, 0ms);
+}
+
+@keyframes m3-stagger-appear {
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

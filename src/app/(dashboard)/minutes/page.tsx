@@ -7,17 +7,7 @@ import { getTodayJST } from "@/lib/time";
 import { calcMemberAutoLoad, getLatestCheckin } from "@/lib/services";
 import { extractNaAction, saveExtractedTasksAction } from "@/app/actions/minutes";
 import { NaCandidate, isCandidateReadyToSave } from "@/lib/gemini";
-import {
-  Sparkles,
-  AlertTriangle,
-  Loader2,
-  CheckCircle2,
-  Calendar,
-  User,
-  Shield,
-  FileText,
-  AlertCircle,
-} from "lucide-react";
+import { MaterialIcon } from "@/components/MaterialIcon";
 
 export default function MinutesPage() {
   const router = useRouter();
@@ -158,56 +148,56 @@ export default function MinutesPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div className="space-y-6">
       {/* ページヘッダー */}
-      <div className="mb-6">
+      <div>
         <div className="flex items-center gap-2">
-          <Sparkles className="h-6 w-6 text-blue-600" />
-          <h1 className="text-2xl font-bold tracking-tight text-slate-800">
+          <MaterialIcon name="auto_awesome" className="text-2xl text-[#0B57D0]" />
+          <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">
             {t("minutes.title")}
           </h1>
         </div>
-        <p className="mt-1 text-xs text-slate-500">{t("minutes.ai_note")}</p>
+        <p className="mt-1 text-xs text-[#747775]">{t("minutes.ai_note")}</p>
       </div>
 
-      {/* 注意書きバナー（S12） */}
-      <div className="mb-6 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900 shadow-2xs">
-        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+      {/* 注意書きバナー（S12 / M3 Outlined Banner） */}
+      <div className="flex items-start gap-2.5 rounded-[16px] border border-[#FFDCC1] bg-white p-3.5 text-xs text-[#8B4A00] shadow-xs">
+        <MaterialIcon name="warning" className="text-base text-[#8B4A00] shrink-0 mt-0.5" />
         <p>{t("minutes.privacy_warning").replace(":material/warning: ", "")}</p>
       </div>
 
       {/* エラー表示 */}
       {errorMessage && (
-        <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-red-200 bg-red-50 p-4 text-xs font-semibold text-red-800 shadow-2xs">
-          <AlertCircle className="h-4 w-4 text-red-600 shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-[28px] border border-[#B3261E]/40 bg-[#F9DEDC] p-4 text-xs font-medium text-[#410E0B] shadow-xs">
+          <MaterialIcon name="error_outline" className="text-base text-[#B3261E] shrink-0" />
           <p>{errorMessage}</p>
         </div>
       )}
 
       {/* 成功表示 */}
       {successMessage && (
-        <div className="mb-6 flex items-center gap-2.5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-bold text-emerald-800 shadow-2xs">
-          <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-[28px] border border-[#146C2E]/40 bg-[#C4EED0] p-4 text-xs font-medium text-[#072711] shadow-xs">
+          <MaterialIcon name="check_circle" className="text-base text-[#146C2E] shrink-0" />
           <p>{successMessage}</p>
         </div>
       )}
 
-      {/* 議事メモ入力フォーム */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs mb-8">
+      {/* 議事メモ入力フォーム（M3 Outlined Card） */}
+      <div className="rounded-[28px] border border-[#C4C7C5]/40 bg-white p-6 shadow-xs">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
               {t("minutes.meeting_date_label")}
             </label>
             <input
               type="date"
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-bold text-slate-700 mb-1">
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
               {t("minutes.meeting_title_label")}
             </label>
             <input
@@ -215,17 +205,17 @@ export default function MinutesPage() {
               value={meetingTitle}
               onChange={(e) => setMeetingTitle(e.target.value)}
               placeholder="例：第5回 定例会"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-hidden"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
             />
           </div>
         </div>
 
         <div className="mb-4">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-xs font-bold text-slate-700">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-medium text-[#444746]">
               {t("minutes.minutes_text_label")}
             </label>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-[#747775]">
               {minutesText.length} / 20,000
             </span>
           </div>
@@ -234,7 +224,7 @@ export default function MinutesPage() {
             value={minutesText}
             onChange={(e) => setMinutesText(e.target.value)}
             placeholder={t("minutes.minutes_text_placeholder")}
-            className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-800 focus:border-blue-500 focus:bg-white focus:outline-hidden font-mono leading-relaxed"
+            className="w-full rounded-[12px] border border-[#747775] bg-white p-3 text-xs text-[#1F1F1F] placeholder:text-[#747775] focus:border-[#0B57D0] focus:outline-none font-sans leading-relaxed"
           />
         </div>
 
@@ -243,18 +233,18 @@ export default function MinutesPage() {
             type="button"
             disabled={isExtracting || !minutesText.trim()}
             onClick={handleExtract}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition"
+            className="inline-flex items-center gap-2 h-10 rounded-full bg-[#0B57D0] px-5 text-xs font-medium text-white shadow-xs hover:bg-[#0B57D0]/90 active:bg-[#041E49] disabled:opacity-50 transition"
           >
             {isExtracting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <MaterialIcon name="refresh" className="text-base animate-spin" />
                 <span>
                   {lang === "en" ? "Extracting NAs..." : "AI が解析中..."}
                 </span>
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4" />
+                <MaterialIcon name="auto_awesome" className="text-base" />
                 <span>
                   {t("minutes.extract_btn").replace(":material/add_task: ", "")}
                 </span>
@@ -266,17 +256,17 @@ export default function MinutesPage() {
 
       {/* 抽出された NA 候補リスト */}
       {candidates.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-slate-800">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-normal text-[#1F1F1F]">
               {t("minutes.candidates_section")} ({candidates.length}件)
             </h2>
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-[#747775]">
               {selectedCandidates.length} 件選択中
             </div>
           </div>
 
-          <div className="space-y-4 mb-6">
+          <div className="space-y-3">
             {candidates.map((cand, idx) => {
               const isReady = isCandidateReadyToSave(cand.data);
               const isOtherOwner =
@@ -289,28 +279,28 @@ export default function MinutesPage() {
               return (
                 <div
                   key={idx}
-                  className={`rounded-2xl border transition-all p-5 shadow-xs ${
+                  className={`rounded-[28px] border transition-all p-5 shadow-xs bg-white ${
                     cand.included
-                      ? "border-blue-200 bg-white ring-1 ring-blue-100"
-                      : "border-slate-200 bg-slate-50/60 opacity-60"
+                      ? "border-[#0B57D0] ring-1 ring-[#D3E3FD]"
+                      : "border-[#C4C7C5]/40 opacity-60"
                   }`}
                 >
                   {/* ヘッダー行：チェックボックスと引用 */}
-                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                  <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#C4C7C5]/30">
                     <label className="flex items-center gap-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={cand.included}
                         onChange={() => toggleInclude(idx)}
-                        className="h-4 w-4 rounded-sm border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        className="h-4 w-4 rounded text-[#0B57D0] focus:ring-[#0B57D0] cursor-pointer"
                       />
-                      <span className="text-xs font-bold text-slate-800">
+                      <span className="text-xs font-medium text-[#1F1F1F]">
                         {t("minutes.include_checkbox")} #{idx + 1}
                       </span>
                     </label>
 
                     {cand.data.evidence && (
-                      <span className="text-[11px] text-slate-400 italic truncate max-w-md">
+                      <span className="text-[11px] text-[#747775] italic truncate max-w-md">
                         {t("minutes.evidence_label", {
                           evidence: cand.data.evidence,
                         })}
@@ -321,8 +311,8 @@ export default function MinutesPage() {
                   {/* 候補フォームグリッド */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
-                        {t("task_form.field_title")} <span className="text-red-500">*</span>
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
+                        {t("task_form.field_title")} <span className="text-[#B3261E]">*</span>
                       </label>
                       <input
                         type="text"
@@ -330,14 +320,14 @@ export default function MinutesPage() {
                         onChange={(e) =>
                           updateCandidate(idx, { title: e.target.value })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-3 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
                         {t("task_form.field_next_action")}{" "}
-                        <span className="text-red-500">*</span>
+                        <span className="text-[#B3261E]">*</span>
                       </label>
                       <input
                         type="text"
@@ -345,16 +335,16 @@ export default function MinutesPage() {
                         onChange={(e) =>
                           updateCandidate(idx, { nextAction: e.target.value })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-3 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
                         {t("task_form.field_owner")}{" "}
-                        <span className="text-red-500">*</span>
+                        <span className="text-[#B3261E]">*</span>
                       </label>
                       <select
                         value={cand.data.ownerMemberId}
@@ -363,7 +353,7 @@ export default function MinutesPage() {
                             ownerMemberId: e.target.value,
                           })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       >
                         <option value="">
                           -- {lang === "en" ? "Select Owner" : "担当者を選択"} --
@@ -379,9 +369,9 @@ export default function MinutesPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
                         {t("task_form.field_roles")}{" "}
-                        <span className="text-red-500">*</span>
+                        <span className="text-[#B3261E]">*</span>
                       </label>
                       <select
                         value={cand.data.roleIds[0] || ""}
@@ -390,7 +380,7 @@ export default function MinutesPage() {
                             roleIds: e.target.value ? [e.target.value] : [],
                           })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       >
                         <option value="">
                           -- {lang === "en" ? "Select Role" : "役職を選択"} --
@@ -406,7 +396,7 @@ export default function MinutesPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
                         {t("task_form.field_weight")}
                       </label>
                       <select
@@ -416,7 +406,7 @@ export default function MinutesPage() {
                             weight: e.target.value as "軽" | "中" | "重",
                           })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       >
                         <option value="軽">軽（1〜2時間）</option>
                         <option value="中">中（半日〜1日）</option>
@@ -425,9 +415,9 @@ export default function MinutesPage() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                      <label className="block text-[11px] font-medium text-[#444746] mb-1">
                         {t("task_form.field_na_due")}{" "}
-                        <span className="text-red-500">*</span>
+                        <span className="text-[#B3261E]">*</span>
                       </label>
                       <input
                         type="date"
@@ -435,14 +425,14 @@ export default function MinutesPage() {
                         onChange={(e) =>
                           updateCandidate(idx, { naDue: e.target.value })
                         }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 focus:border-blue-500 focus:outline-hidden"
+                        className="w-full h-9 rounded-[8px] border border-[#747775] bg-white px-2.5 text-xs text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                       />
                     </div>
                   </div>
 
                   {/* 他者依頼時の注意（5.3） */}
                   {isOtherOwner && (
-                    <p className="mt-2 text-[11px] text-blue-700 bg-blue-50 rounded-lg px-2.5 py-1">
+                    <p className="mt-2 text-[11px] text-[#041E49] bg-[#D3E3FD] rounded-[8px] px-2.5 py-1">
                       {t("task_form.request_notice_info", {
                         owner_name: ownerObj?.displayName || cand.data.ownerMemberId,
                       })}
@@ -450,7 +440,7 @@ export default function MinutesPage() {
                   )}
 
                   {!isReady && cand.included && (
-                    <p className="mt-2 text-[11px] font-semibold text-amber-700">
+                    <p className="mt-2 text-[11px] font-medium text-[#8B4A00]">
                       ※ タイトル・NA・担当者・役職・期限がすべて揃うと登録可能になります。
                     </p>
                   )}
@@ -460,17 +450,17 @@ export default function MinutesPage() {
           </div>
 
           {/* 一括登録アクションバー */}
-          <div className="sticky bottom-6 rounded-2xl border border-slate-200 bg-white/95 backdrop-blur-md p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="sticky bottom-6 rounded-[28px] border border-[#C4C7C5]/40 bg-white/95 backdrop-blur-md p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3">
             <div>
               {anyIncompleteSelected ? (
-                <p className="text-xs font-semibold text-amber-700">
+                <p className="text-xs font-medium text-[#8B4A00]">
                   {t("minutes.missing_required_warning").replace(
                     ":material/warning: ",
                     ""
                   )}
                 </p>
               ) : (
-                <p className="text-xs text-slate-600">
+                <p className="text-xs text-[#444746]">
                   {selectedCandidates.length} 件のタスクを新規作成します。
                 </p>
               )}
@@ -484,16 +474,16 @@ export default function MinutesPage() {
                 anyIncompleteSelected
               }
               onClick={handleSaveAll}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 transition"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 h-10 rounded-full bg-[#0B57D0] px-6 text-xs font-medium text-white shadow-xs hover:bg-[#0B57D0]/90 active:bg-[#041E49] disabled:opacity-50 transition"
             >
               {isSaving ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <MaterialIcon name="refresh" className="text-base animate-spin" />
                   <span>登録中...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-4 w-4" />
+                  <MaterialIcon name="check" className="text-base" />
                   <span>{t("minutes.save_selected_btn")}</span>
                 </>
               )}
@@ -504,4 +494,3 @@ export default function MinutesPage() {
     </div>
   );
 }
-

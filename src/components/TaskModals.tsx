@@ -13,21 +13,10 @@ import {
   CreateTaskInput,
   UpdateTaskInput,
 } from "@/app/actions/tasks";
-import {
-  X,
-  Plus,
-  Edit2,
-  Zap,
-  Archive,
-  RotateCcw,
-  History,
-  AlertCircle,
-  RefreshCw,
-  Check,
-} from "lucide-react";
+import { MaterialIcon } from "@/components/MaterialIcon";
 
 // ==========================================
-// 1. タスク新規作成モーダル（F7）
+// 1. タスク新規作成モーダル（F7 / M3 Dialog）
 // ==========================================
 export function TaskCreateModal({
   isOpen,
@@ -126,21 +115,22 @@ export function TaskCreateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs overflow-y-auto">
-      <div className="my-8 w-full max-w-xl rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-          <h2 className="text-lg font-bold text-slate-800">新規タスクの作成（F7）</h2>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/40 p-4 overflow-y-auto">
+      <div className="my-8 w-full max-w-xl rounded-[28px] bg-white p-6 shadow-2xl border border-[#C4C7C5]/40">
+        <div className="flex items-center justify-between border-b border-[#C4C7C5]/30 pb-3">
+          <h2 className="text-lg font-medium text-[#1F1F1F]">新規タスクの作成（F7）</h2>
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            aria-label="モーダルを閉じる"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] transition"
           >
-            <X className="h-5 w-5" />
+            <MaterialIcon name="close" className="text-xl" />
           </button>
         </div>
 
         {errorMessage && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
+          <div className="mt-3 rounded-[12px] border border-[#B3261E]/40 bg-[#F9DEDC] p-3 text-xs text-[#410E0B] flex items-center gap-2">
+            <MaterialIcon name="error_outline" className="text-base text-[#B3261E] shrink-0" />
             <span>{errorMessage}</span>
           </div>
         )}
@@ -148,8 +138,8 @@ export function TaskCreateModal({
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* タスク名 */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              タスク名 <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              タスク名 <span className="text-[#B3261E]">*</span>
             </label>
             <input
               type="text"
@@ -157,17 +147,17 @@ export function TaskCreateModal({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="例：春合宿の宿泊先予約"
               maxLength={100}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               required
             />
           </div>
 
-          {/* 役職（複数選択） */}
+          {/* 役職（複数選択 / M3 Filter Chips） */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              関連する役職（複数可） <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              関連する役職（複数可） <span className="text-[#B3261E]">*</span>
             </label>
-            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-1.5 border border-slate-200 rounded-xl bg-slate-50">
+            <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto p-2 border border-[#C4C7C5]/40 rounded-[12px] bg-[#F8F9FA]">
               {roles.map((r) => {
                 const isSelected = selectedRoleIds.includes(r.roleId);
                 return (
@@ -175,13 +165,13 @@ export function TaskCreateModal({
                     key={r.roleId}
                     type="button"
                     onClick={() => toggleRole(r.roleId)}
-                    className={`rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                    className={`h-8 rounded-[8px] px-3 text-xs font-medium transition flex items-center gap-1 ${
                       isSelected
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-100"
+                        ? "bg-[#D3E3FD] text-[#041E49]"
+                        : "bg-white text-[#444746] border border-[#747775] hover:bg-[#F3EDF7]"
                     }`}
                   >
-                    {isSelected && <Check className="inline-block h-3 w-3 mr-1" />}
+                    {isSelected && <MaterialIcon name="check" className="text-sm text-[#0B57D0]" />}
                     {r.name}
                   </button>
                 );
@@ -191,10 +181,10 @@ export function TaskCreateModal({
 
           {/* 担当者（自動負荷・体感負荷を表示 F7） */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              担当者 <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              担当者 <span className="text-[#B3261E]">*</span>
               {ownerMemberId !== currentMemberId && (
-                <span className="ml-2 text-[11px] font-normal text-blue-600">
+                <span className="ml-2 text-[11px] font-normal text-[#0B57D0]">
                   ※自分以外を指定すると「依頼中」になります（5.3）
                 </span>
               )}
@@ -202,7 +192,7 @@ export function TaskCreateModal({
             <select
               value={ownerMemberId}
               onChange={(e) => setOwnerMemberId(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
             >
               {members.map((m) => {
                 const autoLoad = calcMemberAutoLoad(m.memberId, tasks, today);
@@ -220,13 +210,13 @@ export function TaskCreateModal({
           {/* 重さ & 優先度 */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">
                 重さ（軽=1pt, 中=2pt, 重=3pt）
               </label>
               <select
                 value={weight}
                 onChange={(e) => setWeight(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               >
                 <option value="軽">軽（1〜2時間程度）</option>
                 <option value="中">中（半日〜1日程度）</option>
@@ -234,11 +224,11 @@ export function TaskCreateModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">優先度</label>
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">優先度</label>
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               >
                 <option value="高">高</option>
                 <option value="中">中</option>
@@ -249,8 +239,8 @@ export function TaskCreateModal({
 
           {/* 次のアクション（NA） */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              次のアクション（NA） <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              次のアクション（NA） <span className="text-[#B3261E]">*</span>
             </label>
             <input
               type="text"
@@ -258,7 +248,7 @@ export function TaskCreateModal({
               onChange={(e) => setNextAction(e.target.value)}
               placeholder="すぐ動ける粒度の1ステップ（例：宿泊先に候補日程の空き状況をメールで照会）"
               maxLength={200}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               required
             />
           </div>
@@ -266,37 +256,37 @@ export function TaskCreateModal({
           {/* NA期限 & 全体期限 */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                NA期限 <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">
+                NA期限 <span className="text-[#B3261E]">*</span>
               </label>
               <input
                 type="date"
                 value={naDue}
                 onChange={(e) => setNaDue(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">
                 タスク全体の期限（任意）
               </label>
               <input
                 type="date"
                 value={taskDue}
                 onChange={(e) => setTaskDue(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               />
             </div>
           </div>
 
           {/* ステータス */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">ステータス</label>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">ステータス</label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
             >
               <option value="未着手">未着手</option>
               <option value="進行中">進行中</option>
@@ -307,11 +297,11 @@ export function TaskCreateModal({
 
           {status === "待ち" && (
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">待っている相手（メンバー）</label>
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">待っている相手（メンバー）</label>
               <select
                 value={waitingOnMemberId}
                 onChange={(e) => setWaitingOnMemberId(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               >
                 <option value="">未指定（外部等）</option>
                 {members.map((m) => (
@@ -325,34 +315,34 @@ export function TaskCreateModal({
 
           {/* メモ（個人情報禁止 S9） */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              メモ <span className="text-[11px] font-normal text-slate-400">（※個人情報は入力しないでください S9）</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              メモ <span className="text-[11px] font-normal text-[#747775]">（※個人情報は入力しないでください S9）</span>
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={2}
               placeholder="連絡事項や補足メモ"
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full rounded-[12px] border border-[#747775] bg-white p-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
             />
           </div>
 
           {/* ボタン */}
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#C4C7C5]/30">
             <button
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="rounded-full px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+              className="h-10 px-4 rounded-full text-xs font-medium text-[#444746] hover:bg-[#F3EDF7] transition"
             >
               キャンセル
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-1.5 h-10 px-5 rounded-full bg-[#0B57D0] text-xs font-medium text-white shadow-xs hover:bg-[#0B57D0]/90 disabled:opacity-50 transition"
             >
-              {isPending && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+              {isPending && <MaterialIcon name="refresh" className="text-sm animate-spin" />}
               <span>タスクを作成する</span>
             </button>
           </div>
@@ -363,7 +353,7 @@ export function TaskCreateModal({
 }
 
 // ==========================================
-// 2. 「NA を更新」簡易モーダル（F8 簡易）
+// 2. 「NA を更新」簡易モーダル（F8 簡易 / M3 Dialog）
 // ==========================================
 export function TaskQuickNAUpdateModal({
   task,
@@ -407,62 +397,63 @@ export function TaskQuickNAUpdateModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/40 p-4">
+      <div className="w-full max-w-md rounded-[28px] bg-white p-6 shadow-2xl border border-[#C4C7C5]/40">
+        <div className="flex items-center justify-between border-b border-[#C4C7C5]/30 pb-3">
           <div className="flex items-center gap-1.5">
-            <Zap className="h-4 w-4 text-blue-600" />
-            <h3 className="font-bold text-slate-800">NA を素早く更新（F8）</h3>
+            <MaterialIcon name="bolt" className="text-xl text-[#0B57D0]" />
+            <h3 className="text-lg font-medium text-[#1F1F1F]">NA を素早く更新（F8）</h3>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            aria-label="モーダルを閉じる"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] transition"
           >
-            <X className="h-5 w-5" />
+            <MaterialIcon name="close" className="text-xl" />
           </button>
         </div>
 
-        <p className="mt-2 text-xs font-medium text-slate-500 line-clamp-1">{task.title}</p>
+        <p className="mt-2 text-xs text-[#747775] line-clamp-1">{task.title}</p>
 
         {errorMessage && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs text-red-700">
+          <div className="mt-3 rounded-[12px] border border-[#B3261E]/40 bg-[#F9DEDC] p-2.5 text-xs text-[#410E0B]">
             {errorMessage}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              次のアクション（NA） <span className="text-red-500">*</span>
+            <label className="block text-xs font-medium text-[#444746] mb-1.5">
+              次のアクション（NA） <span className="text-[#B3261E]">*</span>
             </label>
             <input
               type="text"
               value={nextAction}
               onChange={(e) => setNextAction(e.target.value)}
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-sm focus:border-blue-500 focus:outline-none"
+              className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                NA期限 <span className="text-red-500">*</span>
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">
+                NA期限 <span className="text-[#B3261E]">*</span>
               </label>
               <input
                 type="date"
                 value={naDue}
                 onChange={(e) => setNaDue(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
                 required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">ステータス</label>
+              <label className="block text-xs font-medium text-[#444746] mb-1.5">ステータス</label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2 text-sm focus:border-blue-500 focus:outline-none"
+                className="w-full h-10 rounded-[8px] border border-[#747775] bg-white px-3 text-xs sm:text-sm text-[#1F1F1F] focus:border-[#0B57D0] focus:outline-none"
               >
                 <option value="未着手">未着手</option>
                 <option value="進行中">進行中</option>
@@ -472,21 +463,21 @@ export function TaskQuickNAUpdateModal({
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#C4C7C5]/30">
             <button
               type="button"
               onClick={onClose}
               disabled={isPending}
-              className="rounded-full px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 transition"
+              className="h-9 px-4 rounded-full text-xs font-medium text-[#444746] hover:bg-[#F3EDF7] transition"
             >
               キャンセル
             </button>
             <button
               type="submit"
               disabled={isPending}
-              className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-blue-700 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-1.5 h-9 px-5 rounded-full bg-[#0B57D0] text-xs font-medium text-white shadow-xs hover:bg-[#0B57D0]/90 disabled:opacity-50 transition"
             >
-              {isPending && <RefreshCw className="h-3 w-3 animate-spin" />}
+              {isPending && <MaterialIcon name="refresh" className="text-sm animate-spin" />}
               <span>保存する</span>
             </button>
           </div>
@@ -497,7 +488,7 @@ export function TaskQuickNAUpdateModal({
 }
 
 // ==========================================
-// 3. 変更履歴モーダル（F10）
+// 3. 変更履歴モーダル（F10 / M3 Dialog）
 // ==========================================
 export function TaskHistoryModal({
   task,
@@ -520,40 +511,41 @@ export function TaskHistoryModal({
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-slate-200">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#000000]/40 p-4">
+      <div className="w-full max-w-lg rounded-[28px] bg-white p-6 shadow-2xl border border-[#C4C7C5]/40">
+        <div className="flex items-center justify-between border-b border-[#C4C7C5]/30 pb-3">
           <div className="flex items-center gap-1.5">
-            <History className="h-4 w-4 text-blue-600" />
-            <h3 className="font-bold text-slate-800">変更履歴（F10）</h3>
+            <MaterialIcon name="history" className="text-xl text-[#0B57D0]" />
+            <h3 className="text-lg font-medium text-[#1F1F1F]">変更履歴（F10）</h3>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            aria-label="モーダルを閉じる"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-[#444746] hover:bg-[#F3EDF7] transition"
           >
-            <X className="h-5 w-5" />
+            <MaterialIcon name="close" className="text-xl" />
           </button>
         </div>
 
-        <p className="mt-2 text-xs font-semibold text-slate-700 line-clamp-1">{task.title}</p>
+        <p className="mt-2 text-xs text-[#747775] line-clamp-1">{task.title}</p>
 
         <div className="mt-4 max-h-80 overflow-y-auto space-y-2.5 pr-1">
           {logs.length === 0 ? (
-            <p className="py-6 text-center text-xs text-slate-400">変更履歴はありません。</p>
+            <p className="py-6 text-center text-xs text-[#747775]">変更履歴はありません。</p>
           ) : (
             logs.map((log, idx) => {
               const actor = memberMap.get(log.memberId) || log.memberId;
               return (
-                <div key={idx} className="rounded-xl border border-slate-100 bg-slate-50/80 p-3 text-xs">
-                  <div className="flex items-center justify-between text-slate-400 text-[11px] mb-1">
+                <div key={idx} className="rounded-[16px] border border-[#C4C7C5]/30 bg-[#F8F9FA] p-3 text-xs">
+                  <div className="flex items-center justify-between text-[#747775] text-[11px] mb-1">
                     <span>{log.timestamp ? new Date(log.timestamp).toLocaleString("ja-JP") : "-"}</span>
-                    <span className="font-semibold text-slate-700">{actor}</span>
+                    <span className="font-medium text-[#1F1F1F]">{actor}</span>
                   </div>
-                  <div className="font-medium text-slate-800">
-                    操作: <span className="rounded bg-white px-1.5 py-0.5 border border-slate-200">{log.action}</span>
+                  <div className="font-normal text-[#1F1F1F]">
+                    操作: <span className="rounded-[4px] bg-white px-1.5 py-0.5 border border-[#C4C7C5]/30 font-medium">{log.action}</span>
                   </div>
                   {(log.oldValue || log.newValue) && (
-                    <div className="mt-1 text-slate-600 text-[11px] space-y-0.5">
+                    <div className="mt-1 text-[#444746] text-[11px] space-y-0.5">
                       {log.oldValue && <div>変更前: {log.oldValue}</div>}
                       {log.newValue && <div>変更後: {log.newValue}</div>}
                     </div>
@@ -564,10 +556,10 @@ export function TaskHistoryModal({
           )}
         </div>
 
-        <div className="flex justify-end pt-3 border-t border-slate-100 mt-4">
+        <div className="flex justify-end pt-3 border-t border-[#C4C7C5]/30 mt-4">
           <button
             onClick={onClose}
-            className="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200 transition"
+            className="h-9 px-4 rounded-full bg-[#F3EDF7] text-xs font-medium text-[#1F1F1F] hover:bg-[#ECE6F0] transition"
           >
             閉じる
           </button>
@@ -576,4 +568,3 @@ export function TaskHistoryModal({
     </div>
   );
 }
-

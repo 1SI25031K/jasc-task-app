@@ -6,7 +6,7 @@ import { useDashboard } from "@/context/DashboardContext";
 import { buildRoleBoardSummaries } from "@/lib/services";
 import { getTodayJST, parseFuzzyDate } from "@/lib/time";
 import { Avatar } from "@/components/Avatar";
-import { ArrowRight, AlertTriangle, Inbox, Smile, Calendar } from "lucide-react";
+import { MaterialIcon } from "@/components/MaterialIcon";
 
 const CATEGORIES = ["すべて", "主役職", "副役職", "サイト", "その他"] as const;
 
@@ -25,12 +25,12 @@ export default function BoardPage() {
 
   // 上部バナー用集計
   const pendingRequestsCount = data.tasks.filter(
-    (t) =>
-      !t.archived &&
-      t.status !== "完了" &&
-      t.ownerMemberId === currentMember.memberId &&
-      ["依頼中", "相談中"].includes(t.assignmentStatus) &&
-      t.requestedBy !== currentMember.memberId
+    (task) =>
+      !task.archived &&
+      task.status !== "完了" &&
+      task.ownerMemberId === currentMember.memberId &&
+      ["依頼中", "相談中"].includes(task.assignmentStatus) &&
+      task.requestedBy !== currentMember.memberId
   ).length;
 
   const hasTodayCheckin = data.checkins.some(
@@ -46,27 +46,29 @@ export default function BoardPage() {
   const memberMap = new Map(data.members.map((m) => [m.memberId, m]));
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+    <div className="space-y-6">
       {/* ページヘッダー */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-800">{t("board.title")}</h1>
-        <p className="mt-1 text-sm text-slate-500">{t("board.subtitle")}</p>
+      <div>
+        <h1 className="text-2xl font-normal tracking-tight text-[#1F1F1F]">{t("board.title")}</h1>
+        <p className="mt-1 text-sm text-[#444746]">{t("board.subtitle")}</p>
       </div>
 
       {/* 上部お知らせバナー */}
       {(pendingRequestsCount > 0 || !hasTodayCheckin) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {pendingRequestsCount > 0 && (
-            <div className="flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50/80 p-4">
+            <div className="flex items-center justify-between rounded-[28px] border border-[#C4C7C5]/40 bg-white p-4">
               <div className="flex items-center gap-3">
-                <Inbox className="h-5 w-5 text-amber-700 shrink-0" />
-                <span className="text-sm font-medium text-amber-900">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#D3E3FD] text-[#0B57D0]">
+                  <MaterialIcon name="inbox" className="text-xl" />
+                </div>
+                <span className="text-sm font-medium text-[#1F1F1F]">
                   {t("board.banner_requests", { count: pendingRequestsCount })}
                 </span>
               </div>
               <Link
                 href="/inbox"
-                className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-amber-700 transition"
+                className="h-9 px-4 rounded-full bg-[#0B57D0] text-xs font-medium text-white hover:bg-[#0B57D0]/90 transition inline-flex items-center"
               >
                 {t("board.banner_requests_btn")}
               </Link>
@@ -74,16 +76,18 @@ export default function BoardPage() {
           )}
 
           {!hasTodayCheckin && (
-            <div className="flex items-center justify-between rounded-xl border border-purple-200 bg-purple-50/80 p-4">
+            <div className="flex items-center justify-between rounded-[28px] border border-[#C4C7C5]/40 bg-white p-4">
               <div className="flex items-center gap-3">
-                <Smile className="h-5 w-5 text-purple-700 shrink-0" />
-                <span className="text-sm font-medium text-purple-900">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#E9DDFF] text-[#6B4FBB]">
+                  <MaterialIcon name="mood" className="text-xl" />
+                </div>
+                <span className="text-sm font-medium text-[#1F1F1F]">
                   {t("board.banner_checkin")}
                 </span>
               </div>
               <Link
                 href="/checkin"
-                className="rounded-lg bg-purple-600 px-3 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-purple-700 transition"
+                className="h-9 px-4 rounded-full bg-[#0B57D0] text-xs font-medium text-white hover:bg-[#0B57D0]/90 transition inline-flex items-center"
               >
                 {t("board.banner_checkin_btn")}
               </Link>
@@ -92,8 +96,8 @@ export default function BoardPage() {
         </div>
       )}
 
-      {/* カテゴリ選択タブ（クライアント側即時切替） */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-4 mb-6 border-b border-slate-200 no-scrollbar">
+      {/* カテゴリ選択タブ（M3 Filter Chips） */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
         {CATEGORIES.map((cat) => {
           const isSelected = selectedCategory === cat;
           const label =
@@ -115,20 +119,21 @@ export default function BoardPage() {
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`rounded-full px-4 py-1.5 text-xs font-medium transition shrink-0 ${
+              className={`h-8 rounded-[8px] px-3.5 text-xs font-medium transition shrink-0 flex items-center gap-1.5 ${
                 isSelected
-                  ? "bg-slate-900 text-white shadow-xs"
-                  : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+                  ? "bg-[#D3E3FD] text-[#041E49] font-medium"
+                  : "bg-white text-[#444746] border border-[#747775] hover:bg-[#F3EDF7]"
               }`}
             >
-              {label}
+              {isSelected && <MaterialIcon name="check" className="text-sm text-[#0B57D0]" />}
+              <span>{label}</span>
             </button>
           );
         })}
       </div>
 
-      {/* 役職カードグリッド */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* 役職カードグリッド（M3 Cards: radius 28px, white, border outline-variant/40） */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {filteredSummaries.map((summary) => {
           const role = summary.role;
           const roleName = lang === "en" && role.nameEn ? role.nameEn : role.name;
@@ -149,59 +154,56 @@ export default function BoardPage() {
           return (
             <div
               key={role.roleId}
-              className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-6 shadow-xs hover:border-blue-300 hover:shadow-md transition"
+              className="flex flex-col justify-between rounded-[28px] border border-[#C4C7C5]/40 bg-white p-5 shadow-xs hover:border-[#747775] transition"
             >
               <div>
                 {/* 役職名とカテゴリ */}
                 <div className="flex items-start justify-between gap-2 mb-2">
-                  <h2 className="text-xl font-bold tracking-tight text-slate-800">{roleName}</h2>
-                  <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600 shrink-0">
+                  <h2 className="text-lg font-medium text-[#1F1F1F]">{roleName}</h2>
+                  <span className="rounded-[8px] bg-[#F3EDF7] px-2 py-0.5 text-[11px] font-normal text-[#444746] shrink-0">
                     {role.category}
                   </span>
                 </div>
 
                 {/* 責任者 */}
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-3">
                   {summary.leadMember ? (
                     <Avatar name={leadName} memberId={summary.leadMember.memberId} size={22} />
                   ) : null}
-                  <span className="text-xs text-slate-500 font-medium">
+                  <span className="text-xs text-[#444746]">
                     {lang === "en" ? "Lead: " : "責任者: "}
-                    <span className="text-slate-700">{leadName}</span>
+                    <span className="text-[#1F1F1F] font-medium">{leadName}</span>
                   </span>
                 </div>
 
-                {/* 件数サマリー */}
-                <div className="flex flex-wrap items-center gap-3 text-xs mb-5 rounded-lg bg-slate-50 p-2.5 border border-slate-100">
-                  <span className="text-slate-600">
-                    {lang === "en" ? "Open" : "未完了"}{" "}
-                    <strong className="text-slate-900 font-bold">{summary.openTaskCount}</strong>
+                {/* 件数サマリー（1行表示） */}
+                <div className="text-xs text-[#444746] mb-4 py-1.5 px-3 rounded-[8px] bg-[#F8F9FA] border border-[#C4C7C5]/30 flex items-center gap-2">
+                  <span>
+                    {lang === "en" ? "Open" : "未完了"} <strong className="font-medium text-[#1F1F1F]">{summary.openTaskCount}</strong>
                   </span>
-                  <span className="text-slate-300">·</span>
-                  <span className={summary.overdueNaCount > 0 ? "text-red-600 font-semibold" : "text-slate-500"}>
-                    {lang === "en" ? "Overdue" : "期限切れ"}{" "}
-                    <strong className="font-bold">{summary.overdueNaCount}</strong>
+                  <span>·</span>
+                  <span className={summary.overdueNaCount > 0 ? "text-[#B3261E] font-medium" : "text-[#444746]"}>
+                    {lang === "en" ? "Overdue" : "期限切れ"} <strong>{summary.overdueNaCount}</strong>
                   </span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-slate-600">
-                    {lang === "en" ? "This week" : "今週"}{" "}
-                    <strong className="text-slate-900 font-bold">{summary.dueThisWeekNaCount}</strong>
+                  <span>·</span>
+                  <span>
+                    {lang === "en" ? "This week" : "今週"} <strong className="font-medium text-[#1F1F1F]">{summary.dueThisWeekNaCount}</strong>
                   </span>
                 </div>
 
                 {/* 直近の NA */}
                 <div className="mb-4">
-                  <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                    {lang === "en" ? "Next Action" : "直近の NA"}
+                  <div className="text-[11px] font-medium text-[#747775] tracking-wider mb-1">
+                    {lang === "en" ? "NEXT ACTION" : "直近の NA"}
                   </div>
                   {nearestTask ? (
-                    <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 text-xs">
-                      <p className="font-medium text-slate-800 line-clamp-1" title={nearestTask.nextAction}>
+                    <div className="rounded-[12px] border border-[#C4C7C5]/30 bg-[#F8F9FA] p-2.5 text-xs">
+                      <p className="font-medium text-[#1F1F1F] line-clamp-1" title={nearestTask.nextAction}>
                         {nearestTask.nextAction}
                       </p>
-                      <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-500">
+                      <div className="mt-1 flex items-center gap-2 text-[11px] text-[#444746]">
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-slate-400" />
+                          <MaterialIcon name="calendar_today" className="text-xs text-[#747775]" />
                           {parseFuzzyDate(nearestTask.naDue).dateString || nearestTask.naDue}
                         </span>
                         <span>·</span>
@@ -209,19 +211,19 @@ export default function BoardPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-slate-400 italic py-1">{t("board.no_open_na")}</p>
+                    <p className="text-xs text-[#747775] italic py-1">{t("board.no_open_na")}</p>
                   )}
                 </div>
               </div>
 
               {/* 役職詳細リンク */}
-              <div className="pt-2 border-t border-slate-100 flex justify-end">
+              <div className="pt-2 border-t border-[#C4C7C5]/30 flex justify-end">
                 <Link
                   href={`/roles/${role.roleId}`}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800 transition"
+                  className="inline-flex items-center gap-1 text-xs font-medium text-[#0B57D0] hover:underline"
                 >
                   <span>{lang === "en" ? "View Details" : "役職詳細"}</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <MaterialIcon name="arrow_forward" className="text-sm" />
                 </Link>
               </div>
             </div>
@@ -231,4 +233,3 @@ export default function BoardPage() {
     </div>
   );
 }
-

@@ -39,6 +39,11 @@ export function DashboardProvider({
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // initialData が更新されたら state に同期（チェックインやタスク更新の即時反映）
+  useEffect(() => {
+    setData(initialData);
+  }, [initialData]);
+
   // ログインユーザーに一致する member を取得、なければ先頭のアクティブメンバー
   const currentMember =
     data.members.find((m) => m.email.toLowerCase() === userEmail.toLowerCase()) ||

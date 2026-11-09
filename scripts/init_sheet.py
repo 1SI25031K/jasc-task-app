@@ -103,6 +103,7 @@ def initialize_spreadsheet(
             "reminder_log": [],
             "settings": [[sr.key, sr.value] for sr in settings_rows],
             "ai_queries": [],
+            "drive_sync_logs": [],
         }
     else:
         # 開発・テスト用モード：ダミーデータをフル投入
@@ -127,6 +128,7 @@ def initialize_spreadsheet(
             "reminder_log": [],
             "settings": [[sr.key, sr.value] for sr in settings_rows],
             "ai_queries": [],
+            "drive_sync_logs": [],
         }
 
     for sheet_name, headers in SHEET_HEADERS.items():

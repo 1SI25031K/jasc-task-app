@@ -150,7 +150,14 @@ export async function POST(req: NextRequest) {
     }
 
     // 7. Gemini API 呼び出し（SSE ストリーミング）
-    const payload = {
+    const isDriveSearchEnabled =
+      (data.settings["feature_drive_file_search"] || "").trim().toUpperCase() === "TRUE";
+    const storeName =
+      (data.settings["gemini_file_search_store_name"] || "").trim() ||
+      process.env.GEMINI_FILE_SEARCH_STORE_NAME ||
+      "";
+
+    const payload: any = {
       system_instruction: {
         parts: [{ text: AI_SEARCH_SYSTEM_PROMPT }],
       },
@@ -164,6 +171,17 @@ export async function POST(req: NextRequest) {
         temperature: 0.2,
       },
     };
+
+    // Google Drive File Search Tool の統合（F21）
+    if (isDriveSearchEnabled && storeName) {
+      payload.tools = [
+        {
+          file_search: {
+            file_search_store_names: [storeName],
+          },
+        },
+      ];
+    }
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`,

@@ -14,6 +14,7 @@ export const CONFIG = {
     meetings: "meetings",
     reminderLog: "reminder_log",
     aiQueries: "ai_queries",
+    driveSyncLogs: "drive_sync_logs",
   },
 } as const;
 

@@ -139,6 +139,17 @@ SHEET_HEADERS: dict[str, list[str]] = {
         "status",
         "error_message",
     ],
+    "drive_sync_logs": [
+        "file_id",
+        "file_name",
+        "mime_type",
+        "drive_modified_time",
+        "gemini_file_resource_name",
+        "status",
+        "drive_link",
+        "last_synced_at",
+        "error_message",
+    ],
 }
 
 

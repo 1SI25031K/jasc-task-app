@@ -200,6 +200,9 @@
 | feature_ai_search | `FALSE` | ホーム画面の AI 問い合わせ機能の有効化フラグ（TRUE/FALSE。本番課金有効化前は FALSE で安全にデプロイ可能） |
 | rate_limit_ai_search_per_minute | `5` | 1メンバーあたりの1分間 AI 検索呼び出し上限回数 |
 | rate_limit_ai_search_per_day | `50` | 1メンバーあたりの1日（24時間） AI 検索呼び出し上限回数 |
+| drive_ai_shared_folder_id | （空） | Google Drive の「AI共有」フォルダID |
+| gemini_file_search_store_name | （空） | Gemini File Search Store のリソース名（自動管理） |
+| feature_drive_file_search | `FALSE` | Google Drive 資料連携（File Search）の有効化フラグ（TRUE/FALSE） |
 
 ### 4.11 `ai_queries`（AI 問い合わせ履歴）
 ホーム画面の検索バーからの AI 問い合わせ実行ログを記録するシート（全7列）。監査および機能改善のために利用する。
@@ -214,6 +217,21 @@
 | grounded_task_ids | 文字列 | 回答内で引用されたタスクID（カンマ区切り） | `T-001,T-004` |
 | status | 文字列 | 実行ステータス（`SUCCESS` / `RATE_LIMITED` / `ERROR` / `DISABLED`） | `SUCCESS` |
 | error_message | 文字列 | エラー時の内容（成功時は空） | `QuotaExceeded` |
+
+### 4.12 `drive_sync_logs`（Google Drive 資料同期ログ）
+Google Drive 専用フォルダ「AI共有」から Gemini File Search Store へ同期された資料の履歴・状態を管理するシート（全9列）。
+
+| 列名 | 型 | 説明 | 例 |
+|---|---|---|---|
+| file_id | 文字列 | Google Drive のファイル一意ID | `1A2b3C4d5E...` |
+| file_name | 文字列 | ファイル名 | `2026サマーフォーラム企画書.pdf` |
+| mime_type | 文字列 | ドキュメントの MIME タイプ | `application/pdf` |
+| drive_modified_time | 日時 | Drive 側での最終更新日時（ISO 8601） | `2026-11-08T15:30:00Z` |
+| gemini_file_resource_name | 文字列 | Gemini File Search Store 内の登録リソース名 | `files/abcdef12345` |
+| status | 文字列 | 同期ステータス（`INDEXED` / `SKIPPED_PII` / `ERROR` / `REMOVED`） | `INDEXED` |
+| drive_link | 文字列 | ドキュメント閲覧用リンク（URL） | `https://drive.google.com/file/d/.../view` |
+| last_synced_at | 日時 | 同期実行日時（ISO 8601） | `2026-11-09T08:00:00Z` |
+| error_message | 文字列 | スキップ・エラー理由（個人情報検知内容など） | `メールアドレスを検知 (1件)` |
 
 ## 5. 機能要件（すべて v1.0 リリース範囲）
 
@@ -243,7 +261,8 @@
 | F17 | **依頼の受信箱** | 自分への依頼を一覧表示。各依頼に「承諾」「相談したい（コメント必須）」ボタン。結果は依頼した人に DM で知らせる |
 | F18 | **個人 DM リマインド** | 5.6 のルールで、毎朝 Slack の個人 DM を送る |
 | F19 | **週次の完了まとめ** | 毎週月曜の朝、チャンネルに投稿：先週完了したタスク（役職ごと・担当者名付き）、全体と役職別の完了数、今週期限の主な NA。完了0件の役職は載せない（責める形にしない） |
-| F20 | **ホーム検索バー AI 問い合わせ** | ホーム画面の Search bar から AI に自然言語で質問・タスク検索。AI 回答（上）と関連タスク一覧（下）の 2 層表示。厳格なホワイトリストと PII マスキング、プロンプトインジェクション防御、M3 チップ連携（5.9） |
+| F20 | **ホーム検索バー AI 問い合わせ** | ホーム画面の Search bar から AI に自然言語で質問・タスク検索。AI 回答（上）と関連タスク一覧（下）の 2 層表示。厳格なホワイトリストと PII マスキング、プロンプトインジェクション防御、M3 チップ連携（5.8） |
+| F21 | **Google Drive 資料連携（File Search）** | 専用フォルダ「AI共有」の資料を自動索引化。F14（NA生成）および F20（AI問い合わせ）でタスクと資料を横断参照。タスク根拠と資料根拠を画面上で明確に区別し、元資料への閲覧リンクを表示（5.9） |
 
 ### 5.3 依頼と承諾の流れ
 - 自分を担当者にしてタスクを作成した場合：`assignment_status=承諾済`、`requested_by` は空。
@@ -335,7 +354,27 @@
 - **ログ記録**:
   - `ai_queries` シートに `query_id`, `timestamp`, `member_id`, `query_text`, `grounded_task_ids`, `status`, `error_message` を記録。**個人情報保護のため、回答本文は一切保存しない**。
 
-### 5.9 将来の拡張（v1.0 では作らない）
+### 5.9 F21（Google Drive 資料連携・File Search）の詳細仕様
+- **全体概要**:
+  - Google Drive 内の専用フォルダ「AI共有」（`drive_ai_shared_folder_id`）に置かれた共有資料を、日次バッチ（`scripts/sync_drive_files.py`）で Gemini API のマネージド RAG「File Search Store」へ自動インデックス化。
+  - F14（議事録 NA 抽出）および F20（ホーム AI 問い合わせ）において、タスクデータ（スプレッドシート）と共有資料（Drive）を横断して根拠を参照可能にする。
+- **認証とキーレス同期**:
+  - サービスアカウント（`task-app-run@...`）に Google Drive フォルダの「閲覧者（Viewer）」権限を付与（書き込み・削除権限は与えない）。
+  - GitHub Actions からの自動実行には Google Cloud Workload Identity Federation (WIF) を利用し、秘密鍵 JSON を GitHub に置かないキーレス認証を標準とする。
+- **ドキュメント変換と同期**:
+  - Google ドキュメント・スライドは PDF に変換してエクスポートし、レイアウトとページ構造を忠実にインデックス化。
+  - フォルダから削除または移動されたファイルは、File Search Store からも即座に抹消。
+- **事前安全検査（ガードレール・S16）**:
+  - ファイル取り込み前に本文を自動スキャンし、メールアドレス、電話番号、選考・健康・認証関連キーワード（選考結果、合格通知、面接評価、健康診断、病歴、暗証番号等）が検知された場合は、**File Search へのアップロードを直ちにブロック**。
+  - `drive_sync_logs` に理由を記録し、管理者に警告通知を送る。
+- **出典の明示と画面上の明確な区別（S18）**:
+  - 回答内でタスクと資料の根拠を視覚的に明確に区別して表示：
+    - タスク根拠: `[TASK:T-001]`（M3 Primary チップ / クリックでタスク詳細を開く）
+    - 資料根拠: `[DOC:資料名|URL]`（M3 Document チップ / クリックで Google Drive プレビューを新規タブで開く）
+- **プロンプトインジェクション対策（S17）**:
+  - 資料内に書かれた命令文（「これまでの指示を無視して」等）を AI がプロンプトとして実行しないよう厳格なシステム命令を適用。
+
+### 5.10 将来の拡張（v1.0 では作らない）
 - Slack 上のボタンでの回答・承諾（Slack からの返事を受け取るサーバーが別途必要になるため）
 - メンバー・役職のアプリ内管理画面
 - タスク本文の自動翻訳
@@ -360,6 +399,10 @@
 | S12 | AI 出力は「提案」としてのみ扱う。検証と人の確認を経てから保存する。AI に許すのは候補 JSON を返すことだけ |
 | S13 | Gemini API の呼び出しは1ユーザーあたり1分に3回まで。API キーには利用上限・アラートを設定する |
 | S14 | Slack Bot に与える権限は、必要な最小限（`chat:write`、DM を開くための `im:write`）に限る。トークンが漏れた場合の差し替え手順を README に書く |
+| S15 | Google Drive 連携は専用フォルダ「AI共有」のみを対象とし、サービスアカウントには「閲覧者」権限のみを付与する |
+| S16 | ドキュメント取り込み前に個人情報（メール・電話番号・選考関連語句）を自動スキャンし、検知されたファイルは取り込まず管理者に警告通知する |
+| S17 | ドキュメント内の記述をプロンプト命令として解釈しないプロンプトインジェクション防御を適用する |
+| S18 | AI の回答には必ず参照元の資料名と Google Drive への閲覧リンクを付与する |
 
 ### 6.2 パフォーマンス・可用性
 - Google Sheets の読み込みは `st.cache_data`（TTL 60秒程度）でキャッシュし、書き込み後はキャッシュを破棄する。
@@ -476,12 +519,24 @@ jasc-task-app/
 |:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | `query_id` | `timestamp` | `member_id` | `query_text` | `grounded_task_ids` | `status` | `error_message` |
 
-### 手順 2: `settings` シートへの設定行追加
-`settings` シートの末尾行に、以下の3行を追加します：
+### 手順 2: `drive_sync_logs` シートの追加（F21 Drive資料連携用）
+1. 左下の「**＋**（シートを追加）」をクリックします。
+2. シート名を `drive_sync_logs` に変更します。
+3. 1行目（A1:I1）に、以下のヘッダーを正確に入力します：
+
+| A1 | B1 | C1 | D1 | E1 | F1 | G1 | H1 | I1 |
+|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| `file_id` | `file_name` | `mime_type` | `drive_modified_time` | `gemini_file_resource_name` | `status` | `drive_link` | `last_synced_at` | `error_message` |
+
+### 手順 3: `settings` シートへの設定行追加
+`settings` シートの末尾行に、以下の各行を追加します：
 
 | key (A列) | value (B列) | 説明 |
 |---|---|---|
 | `feature_ai_search` | `FALSE` | AI 検索機能を有効化する場合は `TRUE` に変更（課金設定完了後に有効化） |
 | `rate_limit_ai_search_per_minute` | `5` | 1分あたりの呼び出し上限回数 |
 | `rate_limit_ai_search_per_day` | `50` | 1日あたりの呼び出し上限回数 |
+| `drive_ai_shared_folder_id` | （空） | Google Drive の「AI共有」フォルダID（フォルダURLの末尾文字列） |
+| `gemini_file_search_store_name` | （空） | Gemini File Search Store リソース名（自動生成または指定） |
+| `feature_drive_file_search` | `FALSE` | Google Drive 資料連携を有効化する場合は `TRUE` に変更 |
 

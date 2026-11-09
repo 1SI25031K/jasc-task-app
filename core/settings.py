@@ -72,6 +72,9 @@ class AppSettings:
     feature_ai_search: str = "FALSE"
     rate_limit_ai_search_per_minute: int = 5
     rate_limit_ai_search_per_day: int = 50
+    drive_ai_shared_folder_id: str = ""
+    gemini_file_search_store_name: str = ""
+    feature_drive_file_search: str = "FALSE"
 
     @classmethod
     def from_dict(cls, raw: dict[str, str] | None = None) -> AppSettings:
@@ -107,6 +110,9 @@ class AppSettings:
             rate_limit_ai_search_per_day=_parse_int(
                 data.get("rate_limit_ai_search_per_day"), 50
             ),
+            drive_ai_shared_folder_id=data.get("drive_ai_shared_folder_id", "").strip(),
+            gemini_file_search_store_name=data.get("gemini_file_search_store_name", "").strip(),
+            feature_drive_file_search=data.get("feature_drive_file_search", "FALSE").strip().upper(),
         )
 
     @classmethod
@@ -143,5 +149,8 @@ class AppSettings:
                 "rate_limit_ai_search_per_day",
                 str(self.rate_limit_ai_search_per_day),
             ),
+            SettingRow("drive_ai_shared_folder_id", self.drive_ai_shared_folder_id),
+            SettingRow("gemini_file_search_store_name", self.gemini_file_search_store_name),
+            SettingRow("feature_drive_file_search", self.feature_drive_file_search),
         ]
 

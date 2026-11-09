@@ -27,13 +27,14 @@ export function SafeMarkdown({
 }: SafeMarkdownProps) {
   if (!content) return null;
 
-  // インライン要素（太字、コード、[TASK:ID]）のパース
+  // インライン要素（太字、コード、[TASK:ID]、[DOC:タイトル|URL]）のパース
   const renderInline = (text: string): React.ReactNode[] => {
     // パターン:
     // 1. **bold**
     // 2. `code`
     // 3. [TASK:id]
-    const regex = /(\*\*[^*]+\*\*|`[^`]+`|\[TASK:[A-Za-z0-9_-]+\])/g;
+    // 4. [DOC:title|url] または [DOC:title]
+    const regex = /(\*\*[^*]+\*\*|`[^`]+`|\[TASK:[A-Za-z0-9_-]+\]|\[DOC:[^\]]+\])/g;
     const parts = text.split(regex);
 
     return parts.map((part, idx) => {
@@ -79,6 +80,36 @@ export function SafeMarkdown({
             className="inline-flex items-center gap-1 mx-0.5 px-1.5 py-0.5 rounded bg-surface-container text-on-surface-variant text-xs"
           >
             {taskId}
+          </span>
+        );
+      }
+      if (part.startsWith("[DOC:") && part.endsWith("]")) {
+        const docRaw = part.slice(5, -1);
+        if (docRaw.includes("|")) {
+          const [title, url] = docRaw.split("|");
+          return (
+            <a
+              key={idx}
+              href={url.trim()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-[8px] bg-surface-container-high text-on-surface text-xs font-medium hover:bg-surface-container-highest hover:text-primary transition no-underline border border-outline-variant/30 align-middle"
+              title={`共有資料「${title.trim()}」を Google Drive で開く`}
+            >
+              <MaterialIcon name="description" size={14} className="text-secondary" />
+              <span className="truncate max-w-[200px]">{title.trim()}</span>
+              <MaterialIcon name="open_in_new" size={12} className="text-on-surface-variant" />
+            </a>
+          );
+        }
+
+        return (
+          <span
+            key={idx}
+            className="inline-flex items-center gap-1 mx-1 px-2 py-0.5 rounded-[8px] bg-surface-container-high text-on-surface text-xs font-medium border border-outline-variant/30 align-middle"
+          >
+            <MaterialIcon name="description" size={14} className="text-secondary" />
+            <span>{docRaw.trim()}</span>
           </span>
         );
       }

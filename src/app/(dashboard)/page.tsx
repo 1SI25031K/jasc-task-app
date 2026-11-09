@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   ArrowRight,
   X,
+  Sparkles,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -54,6 +55,7 @@ export default function HomePage() {
     { href: "/alerts", label: t("home.chip_alerts"), icon: AlertTriangle },
     { href: "/inbox", label: t("home.chip_inbox"), icon: InboxIcon },
     { href: "/checkin", label: t("home.chip_checkin"), icon: Smile },
+    { href: "/minutes", label: t("home.chip_minutes"), icon: Sparkles },
     { href: "/board", label: t("nav.board"), icon: LayoutGrid },
   ];
 

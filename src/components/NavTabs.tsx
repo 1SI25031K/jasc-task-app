@@ -14,6 +14,7 @@ import {
   BarChart3,
   Smile,
   Inbox,
+  Sparkles,
 } from "lucide-react";
 import { getOverdueTasks } from "@/lib/services";
 
@@ -54,6 +55,7 @@ export function NavTabs() {
       badge: inboxCount > 0 ? inboxCount : undefined,
       badgeColor: "bg-amber-500 text-white",
     },
+    { href: "/minutes", label: t("nav.minutes"), icon: Sparkles },
   ];
 
   return (

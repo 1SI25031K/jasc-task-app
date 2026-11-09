@@ -62,3 +62,4 @@ describe("Checkins Repo & Serialization", () => {
     expect(validateScore(-3)).toBe(false);
   });
 });
+

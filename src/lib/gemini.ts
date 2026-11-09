@@ -382,3 +382,4 @@ export async function extractNaCandidates(
 
   return validateAndSanitizeCandidates(candidateItems, validMemberIds, validRoleIds);
 }
+

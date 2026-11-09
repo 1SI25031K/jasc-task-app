@@ -22,3 +22,4 @@ export async function appendMeeting(
 ): Promise<void> {
   await appendSheetRow(spreadsheetId, "meetings", meetingToRow(meeting));
 }
+

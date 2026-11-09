@@ -59,3 +59,4 @@ describe("Batch 1: Write Foundation & Member Settings", () => {
     expect(resNoLogin.status).toBe("unauthenticated");
   });
 });
+

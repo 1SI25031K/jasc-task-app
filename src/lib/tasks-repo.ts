@@ -136,3 +136,4 @@ export async function appendTask(
   await appendSheetRow(spreadsheetId, "tasks", taskToRow(task));
   return task;
 }
+

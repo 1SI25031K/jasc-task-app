@@ -64,3 +64,4 @@ export async function saveCheckin(
   await appendSheetRow(spreadsheetId, "checkins", checkinToRow(checkin));
   return checkin;
 }
+

@@ -79,3 +79,4 @@ export async function updateMemberSettings(
 
   throw new Error(`Member with ID "${memberId}" not found in members sheet`);
 }
+

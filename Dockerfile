@@ -9,8 +9,8 @@ WORKDIR /app
 
 RUN npm install -g pnpm@12.16.1
 
-COPY package.json pnpm-lock.yaml* .npmrc* ./
-RUN pnpm install
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* .npmrc* ./
+RUN pnpm install --frozen-lockfile
 
 # Stage 2: Builder
 FROM base AS builder

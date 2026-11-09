@@ -5,3 +5,4 @@ export default function DashboardTemplate({
 }) {
   return <div className="m3-page-enter w-full">{children}</div>;
 }
+

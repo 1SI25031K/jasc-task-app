@@ -22,3 +22,4 @@ describe("validateBingImageId (S6 準拠)", () => {
     expect(validateBingImageId("image url with spaces")).toBeNull();
   });
 });
+

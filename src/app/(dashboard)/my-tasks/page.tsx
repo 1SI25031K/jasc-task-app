@@ -121,14 +121,20 @@ export default function MyTasksPage() {
       </div>
 
       {/* M3 Primary Tabs */}
-      <div className="flex border-b border-outline-variant/30 space-x-2 overflow-x-auto no-scrollbar">
+      <div
+        role="tablist"
+        aria-label="タスク分類"
+        className="flex border-b border-outline-variant/30 space-x-2 overflow-x-auto no-scrollbar"
+      >
         {tabs.map((tab) => {
           const isSelected = activeTab === tab.id;
           return (
             <button
               key={tab.id}
+              role="tab"
+              aria-selected={isSelected}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`m3-interactive flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 ${
+              className={`m3-interactive m3-tab flex items-center gap-2 border-b-2 py-3 px-4 text-sm font-medium transition shrink-0 ${
                 isSelected
                   ? "border-primary text-primary"
                   : "border-transparent text-on-surface-variant hover:text-on-surface"

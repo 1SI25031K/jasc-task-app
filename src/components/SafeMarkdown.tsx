@@ -163,3 +163,4 @@ export function SafeMarkdown({
 
   return <div className={`space-y-1 ${className}`}>{elements}</div>;
 }
+

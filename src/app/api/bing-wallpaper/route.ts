@@ -5,3 +5,4 @@ export async function GET() {
   const wallpaper = await fetchBingTodayWallpaper();
   return NextResponse.json({ wallpaper });
 }
+

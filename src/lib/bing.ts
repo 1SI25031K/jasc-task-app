@@ -95,3 +95,4 @@ export async function fetchBingTodayWallpaper(timeoutMs = 3000): Promise<BingWal
     return null;
   }
 }
+

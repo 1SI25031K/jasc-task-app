@@ -21,3 +21,4 @@ export const AiQuerySchema = z.object({
 });
 
 export type AiQuery = z.infer<typeof AiQuerySchema>;
+

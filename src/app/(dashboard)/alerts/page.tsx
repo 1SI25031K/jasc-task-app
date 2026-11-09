@@ -77,15 +77,23 @@ export default function AlertsPage() {
         <p className="mt-1 text-sm text-on-surface-variant">{t("alerts.subtitle")}</p>
       </div>
 
-      {/* 4つの集計メトリクスカード（Level 0 flat, radius 28px, 枠線なし, 影なし） */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* 4つの集計メトリクスカード（Level 0 flat, radius 28px, 枠線なし, 影なし / タブ切り替え対応） */}
+      <div role="tablist" aria-label="アラート区分" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((m) => {
           const isSelected = activeTab === m.id;
           return (
             <div
               key={m.id}
+              role="tab"
+              aria-selected={isSelected}
+              tabIndex={0}
               onClick={() => setActiveTab(m.id as any)}
-              className={`rounded-[28px] border-none shadow-none p-5 cursor-pointer transition select-none m3-interactive ${
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  setActiveTab(m.id as any);
+                }
+              }}
+              className={`m3-tab rounded-[28px] border-none shadow-none p-5 cursor-pointer transition select-none m3-interactive ${
                 isSelected
                   ? "bg-secondary-container ring-2 ring-primary"
                   : "bg-surface-container-lowest hover:bg-surface-container-low"

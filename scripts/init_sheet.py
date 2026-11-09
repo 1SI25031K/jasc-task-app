@@ -102,6 +102,7 @@ def initialize_spreadsheet(
             "daily_snapshots": [],
             "reminder_log": [],
             "settings": [[sr.key, sr.value] for sr in settings_rows],
+            "ai_queries": [],
         }
     else:
         # 開発・テスト用モード：ダミーデータをフル投入
@@ -125,6 +126,7 @@ def initialize_spreadsheet(
             "daily_snapshots": [daily_snapshot_to_row(s) for s in snapshots],
             "reminder_log": [],
             "settings": [[sr.key, sr.value] for sr in settings_rows],
+            "ai_queries": [],
         }
 
     for sheet_name, headers in SHEET_HEADERS.items():

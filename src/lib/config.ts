@@ -13,6 +13,7 @@ export const CONFIG = {
     activityLog: "activity_log",
     meetings: "meetings",
     reminderLog: "reminder_log",
+    aiQueries: "ai_queries",
   },
 } as const;
 

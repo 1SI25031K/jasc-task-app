@@ -8,4 +8,5 @@ export * from "./settings";
 export * from "./activity_log";
 export * from "./meetings";
 export * from "./reminder_log";
+export * from "./ai_queries";
 

@@ -130,6 +130,15 @@ SHEET_HEADERS: dict[str, list[str]] = {
         "key",
         "value",
     ],
+    "ai_queries": [
+        "query_id",
+        "timestamp",
+        "member_id",
+        "query_text",
+        "grounded_task_ids",
+        "status",
+        "error_message",
+    ],
 }
 
 

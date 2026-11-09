@@ -19,6 +19,24 @@ export function getTodayJST(): string {
 }
 
 /**
+ * 現在時刻（Asia/Tokyo）から時間帯に応じた挨拶キー（'morning' / 'afternoon' / 'evening'）を判定する（7.6-B）。
+ * - 5:00 〜 10:59: 'morning'（おはようございます）
+ * - 11:00 〜 17:59: 'afternoon'（こんにちは）
+ * - 18:00 〜 翌4:59: 'evening'（こんばんは）
+ */
+export function getGreetingKey(date = new Date()): "morning" | "afternoon" | "evening" {
+  const jst = toZonedTime(date, TIME_ZONE);
+  const hour = jst.getHours();
+  if (hour >= 5 && hour < 11) {
+    return "morning";
+  }
+  if (hour >= 11 && hour < 18) {
+    return "afternoon";
+  }
+  return "evening";
+}
+
+/**
  * 日付文字列の年度を補完して Date オブジェクトに変換する。
  * 例: "2026-09" 開始の場合:
  * - "2026-11-04" -> Date(2026, 10, 4)

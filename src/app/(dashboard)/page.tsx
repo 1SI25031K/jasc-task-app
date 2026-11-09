@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useDashboard } from "@/context/DashboardContext";
 import { Avatar } from "@/components/Avatar";
 import { buildHomeSummary, getHomeAlerts } from "@/lib/services";
-import { getTodayJST } from "@/lib/time";
+import { getTodayJST, getGreetingKey } from "@/lib/time";
 import {
   Search,
   CheckSquare,
@@ -30,14 +30,8 @@ export default function HomePage() {
       ? currentMember.displayNameEn
       : currentMember.displayName;
 
-  // 時間帯に応じた挨拶文
-  const hour = new Date().getHours();
-  let greetingKey = "evening";
-  if (hour >= 4 && hour < 11) {
-    greetingKey = "morning";
-  } else if (hour >= 11 && hour < 18) {
-    greetingKey = "afternoon";
-  }
+  // 時間帯に応じた挨拶文（Asia/Tokyo 基準: 7.6-B）
+  const greetingKey = getGreetingKey();
 
   const greetingTmpl = t(`home.greeting_${greetingKey}`);
   const greetingText = greetingTmpl.replace("{name}", displayName);

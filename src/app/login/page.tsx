@@ -7,7 +7,7 @@ export default function LoginPage() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-slate-800">JASC タスクマネージャー</h1>
           <p className="mt-2 text-sm text-slate-500">
-            第79回日米学生会議 実行委員会（EC）専用ダッシュボード
+            第79回日米学生会議 実行委員会（EC）タスクマネージャー
           </p>
         </div>
 

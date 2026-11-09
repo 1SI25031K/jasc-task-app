@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "JASC タスクマネージャー",
-  description: "第79回日米学生会議 実行委員会（EC）業務ダッシュボード",
+  description: "第79回日米学生会議 実行委員会（EC）タスクマネージャー",
 };
 
 export default function RootLayout({

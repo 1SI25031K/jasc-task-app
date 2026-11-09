@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseFuzzyDate, isOverdue, isDueThisWeek, isStale } from "@/lib/time";
+import { parseFuzzyDate, isOverdue, isDueThisWeek, isStale, getGreetingKey } from "@/lib/time";
 
 describe("Time & Date Utilities", () => {
   it("parses ISO YYYY-MM-DD correctly", () => {
@@ -57,6 +57,24 @@ describe("Time & Date Utilities", () => {
     expect(isDueThisWeek("2026-11-11", referenceToday)).toBe(true);
     // 8日後は false (11/12)
     expect(isDueThisWeek("2026-11-12", referenceToday)).toBe(false);
+  });
+
+  it("determines time-of-day greeting key based on Asia/Tokyo hour", () => {
+    // 08:00 JST (23:00 UTC previous day) -> morning
+    const morningDate = new Date("2026-11-09T23:00:00Z"); // 08:00 JST
+    expect(getGreetingKey(morningDate)).toBe("morning");
+
+    // 14:00 JST (05:00 UTC) -> afternoon
+    const afternoonDate = new Date("2026-11-09T05:00:00Z"); // 14:00 JST
+    expect(getGreetingKey(afternoonDate)).toBe("afternoon");
+
+    // 20:00 JST (11:00 UTC) -> evening
+    const eveningDate = new Date("2026-11-09T11:00:00Z"); // 20:00 JST
+    expect(getGreetingKey(eveningDate)).toBe("evening");
+
+    // 03:00 JST (18:00 UTC previous day) -> evening (until 04:59)
+    const lateNightDate = new Date("2026-11-09T18:00:00Z"); // 03:00 JST
+    expect(getGreetingKey(lateNightDate)).toBe("evening");
   });
 });
 

@@ -131,13 +131,15 @@ gcloud run deploy jasc-task-app \
   --set-secrets="AUTH_SECRET=auth-secret:latest,AUTH_GOOGLE_SECRET=auth-google-secret:latest,GEMINI_API_KEY=gemini-api-key:latest" \
   --set-env-vars SPREADSHEET_ID="<本番用スプレッドシートID>" \
   --set-env-vars AUTH_GOOGLE_ID="<Google OAuth クライアントID>" \
-  --set-env-vars AUTH_TRUST_HOST="true"
+  --set-env-vars AUTH_TRUST_HOST="true" \
+  --set-env-vars AUTH_URL="https://jasc-task-app-745094009640.asia-northeast1.run.app" \
+  --set-env-vars GEMINI_MODEL="gemini-2.5-flash"
 ```
 
 > [!NOTE]
-> **アクセス制御とセキュリティについて**
+> **アクセス制御と AUTH_URL について**
 > - `--allow-unauthenticated` を指定していますが、インターネット全体に公開されるわけではありません。Next.js Middleware および Auth.js により、Google ログイン認証と **`members` シート（`active=TRUE`）による厳格なアクセス制御** が常に適用されます（未登録アカウントや `active=FALSE` のユーザーは `/unauthorized` へ即座にリダイレクトされ閲覧・書き込みができません）。
-> - Auth.js v5 はコンテナ環境でプロキシヘッダーを自動信頼するために `AUTH_TRUST_HOST="true"` を必要とします。また、`x-forwarded-proto` および `x-forwarded-host` からベース URL を自動判定するため、旧仕様の `NEXTAUTH_URL` や `AUTH_URL` の環境変数の手動指定は不要です。
+> - **`AUTH_URL` の必要性**: Cloud Run 上ではコンテナが内部ポート（`0.0.0.0:8080`）で動作するため、`AUTH_TRUST_HOST="true"` に加えて `AUTH_URL`（例: `https://jasc-task-app-745094009640.asia-northeast1.run.app`）を環境変数に明記する必要があります。これを指定しない場合、Google ログイン完了後のリダイレクト先が内部アドレス `0.0.0.0:8080` と誤認される原因になります。初回デプロイ完了後に確定したサービス URL を `AUTH_URL` に設定してください。
 
 ---
 

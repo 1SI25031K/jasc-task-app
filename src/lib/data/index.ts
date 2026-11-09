@@ -275,7 +275,9 @@ export function transformSheetData(rawSheets: Record<string, string[][]>): Dashb
 /**
  * Google Sheets から全ダッシュボードデータを取得して整形する
  */
-export async function fetchDashboardData(spreadsheetId = process.env.SPREADSHEET_ID): Promise<DashboardData> {
+export async function fetchDashboardData(
+  spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID || process.env.SPREADSHEET_ID
+): Promise<DashboardData> {
   if (!spreadsheetId) {
     throw new Error("SPREADSHEET_ID environment variable is missing");
   }
